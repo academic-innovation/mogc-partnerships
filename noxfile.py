@@ -23,6 +23,14 @@ def format(session):
 
 
 @nox.session
+def migrations(session):
+    """Checks that all expected migrations are present."""
+    session.install("django~=3.2.0")
+    session.install("-r", "requirements.txt")
+    session.run("python", "manage.py", "makemigrations", "--check")
+
+
+@nox.session
 def test(session):
     """Runs tests with pytest."""
     session.install("django~=3.2.0")
