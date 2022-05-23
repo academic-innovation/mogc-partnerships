@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+extend-exclude = "/env/|/venv/"
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_django = 'django'
+skip_glob = 'venv/*,env/*'
+sections = 'FUTURE,STDLIB,DJANGO,THIRDPARTY,FIRSTPARTY,LOCALFOLDER'

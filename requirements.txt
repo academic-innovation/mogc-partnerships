@@ -1,0 +1,14 @@
+black
+django<4.0
+djangorestframework==3.13.1
+edx-django-utils==4.6.0
+edx-drf-extensions
+edx-opaque-keys==2.3.0
+factory-boy==3.2.1
+flake8
+flake8-django
+isort
+nox
+openedx-events==0.9.0
+pytest
+pytest-django
