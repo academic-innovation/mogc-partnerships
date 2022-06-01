@@ -1,0 +1,51 @@
+name: Run quality checks
+on: [push]
+jobs:
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - run: pip install --user --upgrade nox
+      - run: nox -s migrations
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - run: pip install --user --upgrade nox
+      - run: nox -s lint
+  sort:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - run: pip install --user --upgrade nox
+      - run: nox -s sort
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - run: pip install --user --upgrade nox
+      - run: nox -s format
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.8', '3.9', '3.10']
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install --user --upgrade nox
+      - run: nox -s test
