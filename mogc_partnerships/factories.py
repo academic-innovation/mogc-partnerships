@@ -92,3 +92,14 @@ class CatalogMembershipFactory(DjangoModelFactory):
 
 class CatalogMembershipInviteFactory(CatalogMembershipFactory):
     user = None
+
+
+class EnrollmentRecordFactory(DjangoModelFactory):
+    """Factory for EnrollmentRecord objects."""
+
+    user = factory.SubFactory(UserFactory)
+    offering = factory.SubFactory(PartnerOfferingFactory)
+    mode = "honor"
+
+    class Meta:
+        model = models.EnrollmentRecord
