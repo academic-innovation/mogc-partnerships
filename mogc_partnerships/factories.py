@@ -26,6 +26,7 @@ class PartnerFactory(DjangoModelFactory):
 
     name = factory.Faker("company")
     slug = factory.Faker("slug")
+    org = factory.Faker("slug")
 
     class Meta:
         model = models.Partner
