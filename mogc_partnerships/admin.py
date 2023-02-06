@@ -18,7 +18,7 @@ class OfferingInline(admin.StackedInline):
 class PartnerAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "is_active")
     list_filter = ("is_active",)
-    fields = ("name", "slug", "is_active")
+    fields = ("name", "slug", "org", "is_active")
     inlines = [MangerInline, OfferingInline]
 
 
