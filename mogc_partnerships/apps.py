@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
 
-from edx_django_utils.plugins.constants import PluginSignals, PluginURLs
+from edx_django_utils.plugins.constants import PluginSettings, PluginSignals, PluginURLs
 
 PROJECT_TYPE_LMS = "lms.djangoapp"
 
@@ -15,6 +15,11 @@ class PartnershipsAppConfig(AppConfig):
                 PluginURLs.NAMESPACE: "mogc_partnerships",
                 PluginURLs.REGEX: "^api/",
                 PluginURLs.RELATIVE_PATH: "urls",
+            }
+        },
+        PluginSettings.CONFIG: {
+            PROJECT_TYPE_LMS: {
+                "common": {PluginSettings.RELATIVE_PATH: "settings.common"}
             }
         },
         PluginSignals.CONFIG: {
