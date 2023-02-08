@@ -7,6 +7,8 @@ setup(
     install_requires=[
         "django>=3.2,<4.0",
         "edx-django-utils",
+        "openedx-events>=0.8.1",
+        "openedx-filters>=0.7.0",
         "edx-opaque-keys",
     ],
     entry_points={
