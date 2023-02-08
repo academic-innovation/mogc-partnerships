@@ -41,6 +41,7 @@ class Partner(TimeStampedModel):
     slug = models.SlugField(unique=True)
     org = models.CharField(
         max_length=255,
+        unique=True,
         help_text="The Open edX orginization code associated with this partner.",
     )
     is_active = models.BooleanField(default=True)
