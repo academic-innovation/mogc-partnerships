@@ -1,13 +1,33 @@
+from dataclasses import dataclass
+
+from django.http.response import Http404
 from django.test import TestCase, override_settings
 
+from crum import impersonate
 from opaque_keys.edx.keys import CourseKey
-from openedx_filters.learning.filters import CourseEnrollmentStarted
+from openedx_filters.learning.filters import (
+    CourseAboutRenderStarted,
+    CourseEnrollmentStarted,
+)
 
 from mogc_partnerships.factories import (
     CatalogMembershipFactory,
     CatalogOfferingFactory,
     UserFactory,
 )
+
+
+@dataclass
+class CourseDetails:
+    """Stand-in for CourseDetails from edx-platform."""
+
+    org: str
+    course_id: str
+    run: str
+
+    @classmethod
+    def from_course_key(cls, course_key):
+        return cls(course_key.org, course_key.course, course_key.run)
 
 
 @override_settings(
@@ -48,3 +68,52 @@ class TestMembershipRequiredEnrollment(TestCase):
         CatalogMembershipFactory(catalog=offering.catalog, email=user.email, user=user)
         result = CourseEnrollmentStarted.run_filter(user, course_key, mode)
         self.assertEqual(result, (user, course_key, mode))
+
+
+@override_settings(
+    OPEN_EDX_FILTERS_CONFIG={
+        "org.openedx.learning.course_about.render.started.v1": {
+            "fail_silently": False,
+            "pipeline": ["mogc_partnerships.pipeline.HidePartnerCourseAboutPages"],
+        }
+    }
+)
+class TestHidePartnerCourseAboutPages(TestCase):
+    """Tests for HidePartnerCourseAboutPages pipeline."""
+
+    def test_displays_regular_courses(self):
+        user = UserFactory()
+        course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
+        course_details = CourseDetails.from_course_key(course_key)
+        context = {"course_details": course_details}
+        template_name = "page_template.html"
+        with impersonate(user):
+            result = CourseAboutRenderStarted.run_filter(context, template_name)
+        self.assertEqual(result, (context, template_name))
+
+    def test_hides_partner_courses(self):
+        user = UserFactory()
+        course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
+        CatalogOfferingFactory(
+            catalog__partner__org=course_key.org, offering__course_key=course_key
+        )
+        course_details = CourseDetails.from_course_key(course_key)
+        context = {"course_details": course_details}
+        template_name = "page_template.html"
+        with impersonate(user):
+            with self.assertRaises(Http404):
+                CourseAboutRenderStarted.run_filter(context, template_name)
+
+    def test_displays_courses_to_members(self):
+        user = UserFactory()
+        course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
+        offering = CatalogOfferingFactory(
+            catalog__partner__org=course_key.org, offering__course_key=course_key
+        )
+        CatalogMembershipFactory(catalog=offering.catalog, email=user.email, user=user)
+        course_details = CourseDetails.from_course_key(course_key)
+        context = {"course_details": course_details}
+        template_name = "page_template.html"
+        with impersonate(user):
+            result = CourseAboutRenderStarted.run_filter(context, template_name)
+        self.assertEqual(result, (context, template_name))
