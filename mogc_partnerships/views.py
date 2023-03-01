@@ -20,6 +20,7 @@ from . import compat
 from .models import (
     CatalogMembership,
     CatalogOffering,
+    EnrollmentRecord,
     Partner,
     PartnerCatalog,
     PartnerManagementMembership,
@@ -184,6 +185,21 @@ class CatalogMembershipCreateView(generics.CreateAPIView):
         except User.DoesNotExist:
             membership_account = None
         serializer.save(catalog=catalog, user=membership_account)
+
+
+class EnrollmentRecordListView(generics.ListAPIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = serializers.EnrollmentRecordSerializer
+    pagination_class = LargeResultsSetPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        managed_partners = user.partners.all()
+        managed_records = EnrollmentRecord.objects.active().filter(
+            offering__partner__in=managed_partners.values_list("id", flat=True)
+        )
+        return managed_records.select_related("offering__partner")
 
 
 def continue_learning(request, offering_id):

@@ -479,3 +479,47 @@ class TestCatalogMembershipCreateView:
 
         assert response.status_code == 403
         assert not catalog.memberships.exists()
+
+
+@pytest.mark.django_db
+class TestEnrollmentRecordListView:
+    """Tests for EnrollmentRecordListView."""
+
+    def test_managers_see_own_records(self, api_rf):
+        manager = factories.PartnerManagementMembershipFactory()
+        factories.EnrollmentRecordFactory(offering__partner=manager.partner)
+        record_list_view = views.EnrollmentRecordListView.as_view()
+        request = api_rf.get("/records/")
+        force_authenticate(request, manager.user)
+
+        response = record_list_view(request)
+
+        assert response.status_code == 200
+        assert len(response.data["results"]) == 1
+
+    def test_unmanaged_records_not_listed(self, api_rf):
+        manager = factories.PartnerManagementMembershipFactory()
+        factories.EnrollmentRecordFactory()
+        record_list_view = views.EnrollmentRecordListView.as_view()
+        request = api_rf.get("/records/")
+        force_authenticate(request, manager.user)
+
+        response = record_list_view(request)
+
+        assert response.status_code == 200
+        assert len(response.data["results"]) == 0
+
+    @pytest.mark.parametrize(("objs", "queries"), [(3, 2), (7, 2)])
+    def test_query_count(self, api_rf, django_assert_num_queries, objs, queries):
+        manager = factories.PartnerManagementMembershipFactory()
+        factories.EnrollmentRecordFactory.create_batch(
+            objs, offering__partner=manager.partner
+        )
+        record_list_view = views.EnrollmentRecordListView.as_view()
+        request = api_rf.get("/records/")
+        force_authenticate(request, manager.user)
+
+        with django_assert_num_queries(queries):
+            response = record_list_view(request)
+
+        assert response.status_code == 200

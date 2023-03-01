@@ -100,3 +100,14 @@ class CatalogMembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CatalogMembership
         fields = ["id", "catalog", "partner", "email", "user"]
+
+
+class EnrollmentRecordSerializer(serializers.ModelSerializer):
+    """Serializer for EnrollmentRecord objects."""
+
+    id = serializers.ReadOnlyField()
+    offering = PartnerOfferingSerializer(read_only=True)
+
+    class Meta:
+        model = models.EnrollmentRecord
+        fields = ["id", "offering", "is_complete"]
