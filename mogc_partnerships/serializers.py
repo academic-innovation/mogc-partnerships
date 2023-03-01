@@ -94,8 +94,9 @@ class CatalogMembershipSerializer(serializers.ModelSerializer):
 
     id = serializers.ReadOnlyField()
     catalog = serializers.ReadOnlyField(source="catalog.uuid")
+    partner = serializers.ReadOnlyField(source="catalog.partner.slug")
     user = serializers.ReadOnlyField(source="user.username")
 
     class Meta:
         model = models.CatalogMembership
-        fields = ["id", "catalog", "email", "user"]
+        fields = ["id", "catalog", "partner", "email", "user"]

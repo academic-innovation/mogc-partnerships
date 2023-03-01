@@ -431,6 +431,22 @@ class TestCatalogMembershipListView:
         assert response.status_code == 200
         assert len(response.data["results"]) == 0
 
+    @pytest.mark.parametrize(("objs", "queries"), [(3, 2), (7, 2)])
+    def test_query_count(self, api_rf, django_assert_num_queries, objs, queries):
+        """Managers should see memberships for catalogs they manage."""
+
+        manager = factories.PartnerManagementMembershipFactory()
+        factories.CatalogMembershipFactory.create_batch(
+            objs, catalog__partner=manager.partner
+        )
+        membership_list_view = views.CatalogMembershipListView.as_view()
+        request = api_rf.get("/memberships/")
+        force_authenticate(request, manager.user)
+        with django_assert_num_queries(queries):
+            response = membership_list_view(request)
+
+        assert response.status_code == 200
+
 
 @pytest.mark.django_db
 class TestCatalogMembershipCreateView:

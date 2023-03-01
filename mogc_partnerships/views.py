@@ -155,9 +155,10 @@ class CatalogMembershipListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return CatalogMembership.objects.filter(
+        managed_memberships = CatalogMembership.objects.filter(
             catalog__partner__in=user.partners.values_list("id", flat=True)
         )
+        return managed_memberships.select_related("catalog__partner", "user")
 
 
 class CatalogMembershipCreateView(generics.CreateAPIView):
