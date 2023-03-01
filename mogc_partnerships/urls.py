@@ -52,4 +52,9 @@ urlpatterns = [
         views.continue_learning,
         name="continue_learning",
     ),
+    path(
+        f"{API_PREFIX}/records/",
+        views.EnrollmentRecordListView.as_view(),
+        name="record_list",
+    ),
 ]

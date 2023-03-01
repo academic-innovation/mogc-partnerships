@@ -189,6 +189,13 @@ class CatalogMembership(TimeStampedModel):
         return self.user is not None
 
 
+class EnrollmentRecordQuerySet(models.QuerySet):
+    """Custom QuerySet for EnrollmentRecord models."""
+
+    def active(self):
+        return self.filter(is_active=True)
+
+
 class EnrollmentRecord(TimeStampedModel):
     """A record of a learner's enrollment in a partner offering."""
 
@@ -207,6 +214,8 @@ class EnrollmentRecord(TimeStampedModel):
     is_successful = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     creation_date = models.DateTimeField(default=timezone.now)
+
+    objects = EnrollmentRecordQuerySet.as_manager()
 
     class Meta:
         constraints = [
