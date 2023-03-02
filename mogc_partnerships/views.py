@@ -199,7 +199,7 @@ class EnrollmentRecordListView(generics.ListAPIView):
         managed_records = EnrollmentRecord.objects.active().filter(
             offering__partner__in=managed_partners.values_list("id", flat=True)
         )
-        return managed_records.select_related("offering__partner")
+        return managed_records.select_related("user", "offering__partner")
 
 
 def continue_learning(request, offering_id):
