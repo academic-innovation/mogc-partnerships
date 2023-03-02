@@ -159,7 +159,12 @@ class CatalogMembershipListView(generics.ListAPIView):
         managed_memberships = CatalogMembership.objects.filter(
             catalog__partner__in=user.partners.values_list("id", flat=True)
         )
-        return managed_memberships.select_related("catalog__partner", "user")
+
+        # TODO: Find a better way to determine if profiles are present.
+        # This allows us to avoid an N+1 issue in production while still passing tests.
+        user_relationship = "user__profile" if hasattr(user, "profile") else "user"
+
+        return managed_memberships.select_related("catalog__partner", user_relationship)
 
 
 class CatalogMembershipCreateView(generics.CreateAPIView):
