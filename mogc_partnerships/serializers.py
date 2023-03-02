@@ -106,8 +106,9 @@ class EnrollmentRecordSerializer(serializers.ModelSerializer):
     """Serializer for EnrollmentRecord objects."""
 
     id = serializers.ReadOnlyField()
+    user = serializers.ReadOnlyField(source="user.username")
     offering = PartnerOfferingSerializer(read_only=True)
 
     class Meta:
         model = models.EnrollmentRecord
-        fields = ["id", "offering", "is_complete"]
+        fields = ["id", "user", "offering", "is_complete"]
