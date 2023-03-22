@@ -15,5 +15,8 @@ setup(
         "lms.djangoapp": [
             "mogc_partnerships = mogc_partnerships.apps:PartnershipsAppConfig",
         ],
+        "cms.djangoapp": [
+            "mogc_partnerships = mogc_partnerships.apps:PartnershipsAppConfig",
+        ],
     },
 )

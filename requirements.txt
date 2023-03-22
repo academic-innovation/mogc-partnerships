@@ -1,4 +1,5 @@
 black
+celery
 django<4.0
 djangorestframework==3.13.1
 edx-django-utils==4.6.0

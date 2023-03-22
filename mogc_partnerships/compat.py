@@ -27,3 +27,12 @@ def enroll_student(course_key, student_email):
             "enrolled": False,
             "course_home_url": make_course_url(course_key),
         }
+
+
+def get_course_overview_or_none(course_id):
+    try:
+        from openedx.core.djangoapps.content.course_overviews import api  # type: ignore
+
+        return api.get_course_overview_or_none(course_id)
+    except ImportError:
+        return None
