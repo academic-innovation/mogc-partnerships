@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from edx_django_utils.plugins.constants import PluginSettings, PluginSignals, PluginURLs
 
 PROJECT_TYPE_LMS = "lms.djangoapp"
+PROJECT_TYPE_CMS = "cms.djangoapp"
 
 
 class PartnershipsAppConfig(AppConfig):
@@ -23,6 +24,17 @@ class PartnershipsAppConfig(AppConfig):
             }
         },
         PluginSignals.CONFIG: {
+            PROJECT_TYPE_CMS: {
+                PluginSignals.RELATIVE_PATH: "receivers",
+                PluginSignals.RECEIVERS: [
+                    {
+                        PluginSignals.RECEIVER_FUNC_NAME: "create_offering_on_publish",
+                        PluginSignals.SIGNAL_PATH: (
+                            "xmodule.modulestore.django.COURSE_PUBLISHED"
+                        ),
+                    },
+                ],
+            },
             PROJECT_TYPE_LMS: {
                 PluginSignals.RELATIVE_PATH: "receivers",
                 PluginSignals.RECEIVERS: [
@@ -41,6 +53,6 @@ class PartnershipsAppConfig(AppConfig):
                         ),
                     },
                 ],
-            }
+            },
         },
     }

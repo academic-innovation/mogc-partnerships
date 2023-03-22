@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 
 from openedx_events.learning.data import CourseEnrollmentData, UserData
 
+from . import tasks
 from .models import CatalogMembership, EnrollmentRecord, PartnerOffering
 
 
@@ -28,3 +29,7 @@ def update_enrollment_records(enrollment: CourseEnrollmentData, **kwargs):
                 "creation_date": enrollment.creation_date,
             },
         )
+
+
+def create_offering_on_publish(sender, course_key, **kwargs):
+    tasks.update_or_create_offering.delay(str(course_key))
