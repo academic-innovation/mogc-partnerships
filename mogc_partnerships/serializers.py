@@ -18,7 +18,7 @@ class PartnerOfferingDetailsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.PartnerOffering
-        fields = ["course_key", "title"]
+        fields = ["course_key", "title", "description", "short_description"]
 
 
 class PartnerSerializer(serializers.ModelSerializer):
