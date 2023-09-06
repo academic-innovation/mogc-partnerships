@@ -3,14 +3,14 @@ from django.contrib.auth import get_user_model
 from openedx_events.learning.data import CourseEnrollmentData, UserData
 
 from . import tasks
-from .models import CatalogMembership, EnrollmentRecord, PartnerOffering
+from .models import CohortMembership, EnrollmentRecord, PartnerOffering
 
 
 def link_user_to_invite(user: UserData, **kwargs):
     AuthUser = get_user_model()
     email = user.pii.email
     auth_user = AuthUser.objects.get(email=email)
-    CatalogMembership.objects.filter(email=email, user=None).update(user=auth_user)
+    CohortMembership.objects.filter(email=email, user=None).update(user=auth_user)
 
 
 def update_enrollment_records(enrollment: CourseEnrollmentData, **kwargs):

@@ -11,8 +11,8 @@ from openedx_filters.learning.filters import (
 )
 
 from mogc_partnerships.factories import (
-    CatalogMembershipFactory,
-    CatalogOfferingFactory,
+    CohortMembershipFactory,
+    CohortOfferingFactory,
     UserFactory,
 )
 
@@ -52,8 +52,8 @@ class TestMembershipRequiredEnrollment(TestCase):
         user = UserFactory()
         course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
         mode = "honor"
-        CatalogOfferingFactory(
-            catalog__partner__org=course_key.org, offering__course_key=course_key
+        CohortOfferingFactory(
+            cohort__partner__org=course_key.org, offering__course_key=course_key
         )
         with self.assertRaises(CourseEnrollmentStarted.PreventEnrollment):
             CourseEnrollmentStarted.run_filter(user, course_key, mode)
@@ -62,10 +62,10 @@ class TestMembershipRequiredEnrollment(TestCase):
         user = UserFactory()
         course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
         mode = "honor"
-        offering = CatalogOfferingFactory(
-            catalog__partner__org=course_key.org, offering__course_key=course_key
+        offering = CohortOfferingFactory(
+            cohort__partner__org=course_key.org, offering__course_key=course_key
         )
-        CatalogMembershipFactory(catalog=offering.catalog, email=user.email, user=user)
+        CohortMembershipFactory(cohort=offering.cohort, email=user.email, user=user)
         result = CourseEnrollmentStarted.run_filter(user, course_key, mode)
         self.assertEqual(result, (user, course_key, mode))
 
@@ -94,8 +94,8 @@ class TestHidePartnerCourseAboutPages(TestCase):
     def test_hides_partner_courses(self):
         user = UserFactory()
         course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
-        CatalogOfferingFactory(
-            catalog__partner__org=course_key.org, offering__course_key=course_key
+        CohortOfferingFactory(
+            cohort__partner__org=course_key.org, offering__course_key=course_key
         )
         course_details = CourseDetails.from_course_key(course_key)
         context = {"course_details": course_details}
@@ -107,10 +107,10 @@ class TestHidePartnerCourseAboutPages(TestCase):
     def test_displays_courses_to_members(self):
         user = UserFactory()
         course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
-        offering = CatalogOfferingFactory(
-            catalog__partner__org=course_key.org, offering__course_key=course_key
+        offering = CohortOfferingFactory(
+            cohort__partner__org=course_key.org, offering__course_key=course_key
         )
-        CatalogMembershipFactory(catalog=offering.catalog, email=user.email, user=user)
+        CohortMembershipFactory(cohort=offering.cohort, email=user.email, user=user)
         course_details = CourseDetails.from_course_key(course_key)
         context = {"course_details": course_details}
         template_name = "page_template.html"

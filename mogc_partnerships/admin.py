@@ -32,19 +32,19 @@ class PartnerOfferingAdmin(admin.ModelAdmin):
     list_display = ("title", "course_key", "partner")
 
 
-@admin.register(models.PartnerCatalog)
-class PartnerCatalogAdmin(admin.ModelAdmin):
+@admin.register(models.PartnerCohort)
+class PartnerCohortAdmin(admin.ModelAdmin):
     list_display = ("name", "uuid", "partner", "is_active")
 
 
-@admin.register(models.CatalogOffering)
-class CatalogOfferingAdmin(admin.ModelAdmin):
-    list_display = ("catalog", "offering")
+@admin.register(models.CohortOffering)
+class CohortOfferingAdmin(admin.ModelAdmin):
+    list_display = ("cohort", "offering")
 
 
-@admin.register(models.CatalogMembership)
-class CatalogMembershipAdmin(admin.ModelAdmin):
-    list_display = ("email", "catalog", "is_activated")
+@admin.register(models.CohortMembership)
+class CohortMembershipAdmin(admin.ModelAdmin):
+    list_display = ("email", "cohort", "is_activated")
 
     @admin.display(boolean=True)
     def is_activated(self, membership):

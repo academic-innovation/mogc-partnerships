@@ -38,8 +38,8 @@ class PartnerSerializer(serializers.ModelSerializer):
         return obj.id in context["associations"]
 
 
-class PartnerCatalogSerializer(serializers.ModelSerializer):
-    """Serializer for PartnerCatalog objects."""
+class PartnerCohortSerializer(serializers.ModelSerializer):
+    """Serializer for PartnerCohort objects."""
 
     partner = serializers.SlugRelatedField(
         slug_field="slug", queryset=models.Partner.objects.active()
@@ -47,34 +47,34 @@ class PartnerCatalogSerializer(serializers.ModelSerializer):
     uuid = serializers.ReadOnlyField()
 
     class Meta:
-        model = models.PartnerCatalog
+        model = models.PartnerCohort
         fields = ["partner", "name", "uuid"]
 
 
-class PartnerCatalogUpdateSerializer(serializers.ModelSerializer):
-    """Serializer for PartnerCatalog object updates."""
+class PartnerCohortUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for PartnerCohort object updates."""
 
     partner = serializers.ReadOnlyField(source="partner.slug")
     uuid = serializers.ReadOnlyField()
 
     class Meta:
-        model = models.PartnerCatalog
+        model = models.PartnerCohort
         fields = ["partner", "name", "uuid"]
 
 
-class CatalogOfferingSerializer(serializers.ModelSerializer):
-    """Serializer for CatalogOffering objects."""
+class CohortOfferingSerializer(serializers.ModelSerializer):
+    """Serializer for CohortOffering objects."""
 
-    catalog = serializers.ReadOnlyField(source="catalog.uuid")
-    partner = serializers.ReadOnlyField(source="catalog.partner.slug")
+    cohort = serializers.ReadOnlyField(source="cohort.uuid")
+    partner = serializers.ReadOnlyField(source="cohort.partner.slug")
     details = PartnerOfferingDetailsSerializer(read_only=True)
     is_enrolled = serializers.SerializerMethodField(method_name="get_is_enrolled")
 
     class Meta:
-        model = models.CatalogOffering
+        model = models.CohortOffering
         fields = [
             "id",
-            "catalog",
+            "cohort",
             "partner",
             "offering",
             "details",
@@ -89,18 +89,18 @@ class CatalogOfferingSerializer(serializers.ModelSerializer):
         return obj.offering_id in context["enrollments"]
 
 
-class CatalogMembershipSerializer(serializers.ModelSerializer):
-    """Serializer for CatalogMembership objects."""
+class CohortMembershipSerializer(serializers.ModelSerializer):
+    """Serializer for CohortMembership objects."""
 
     id = serializers.ReadOnlyField()
-    catalog = serializers.ReadOnlyField(source="catalog.uuid")
-    partner = serializers.ReadOnlyField(source="catalog.partner.slug")
+    cohort = serializers.ReadOnlyField(source="cohort.uuid")
+    partner = serializers.ReadOnlyField(source="cohort.partner.slug")
     user = serializers.ReadOnlyField(source="user.username")
     name = serializers.ReadOnlyField(source="user.profile.name")
 
     class Meta:
-        model = models.CatalogMembership
-        fields = ["id", "catalog", "partner", "email", "user", "name"]
+        model = models.CohortMembership
+        fields = ["id", "cohort", "partner", "email", "user", "name"]
 
 
 class EnrollmentRecordSerializer(serializers.ModelSerializer):

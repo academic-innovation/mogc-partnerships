@@ -58,40 +58,40 @@ class PartnerOfferingFactory(DjangoModelFactory):
         model = models.PartnerOffering
 
 
-class PartnerCatalogFactory(DjangoModelFactory):
-    """Factory for PartnerCatalog objects."""
+class PartnerCohortFactory(DjangoModelFactory):
+    """Factory for PartnerCohort objects."""
 
     partner = factory.SubFactory(PartnerFactory)
     name = factory.Faker("word")
 
     class Meta:
-        model = models.PartnerCatalog
+        model = models.PartnerCohort
 
 
-class CatalogOfferingFactory(DjangoModelFactory):
-    """Factory for CatalogOffering objects."""
+class CohortOfferingFactory(DjangoModelFactory):
+    """Factory for CohortOffering objects."""
 
-    catalog = factory.SubFactory(PartnerCatalogFactory)
+    cohort = factory.SubFactory(PartnerCohortFactory)
     offering = factory.SubFactory(
-        PartnerOfferingFactory, partner=factory.SelfAttribute("..catalog.partner")
+        PartnerOfferingFactory, partner=factory.SelfAttribute("..cohort.partner")
     )
 
     class Meta:
-        model = models.CatalogOffering
+        model = models.CohortOffering
 
 
-class CatalogMembershipFactory(DjangoModelFactory):
-    """Factory for CatalogMembership objects."""
+class CohortMembershipFactory(DjangoModelFactory):
+    """Factory for CohortMembership objects."""
 
-    catalog = factory.SubFactory(PartnerCatalogFactory)
+    cohort = factory.SubFactory(PartnerCohortFactory)
     email = factory.Faker("email")
     user = factory.SubFactory(UserFactory, email=factory.SelfAttribute("..email"))
 
     class Meta:
-        model = models.CatalogMembership
+        model = models.CohortMembership
 
 
-class CatalogMembershipInviteFactory(CatalogMembershipFactory):
+class CohortMembershipInviteFactory(CohortMembershipFactory):
     user = None
 
 

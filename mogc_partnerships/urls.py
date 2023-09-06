@@ -13,23 +13,23 @@ urlpatterns = [
         name="partner_list",
     ),
     path(
-        f"{API_PREFIX}/catalogs/",
-        views.CatalogListView.as_view(),
-        name="catalog_list",
+        f"{API_PREFIX}/cohorts/",
+        views.CohortListView.as_view(),
+        name="cohort_list",
     ),
     path(
-        f"{API_PREFIX}/catalogs/<uuid:uuid>",
-        views.CatalogDetailView.as_view(),
-        name="catalog_detail",
+        f"{API_PREFIX}/cohorts/<uuid:uuid>",
+        views.CohortDetailView.as_view(),
+        name="cohort_detail",
     ),
     path(
         f"{API_PREFIX}/offerings/",
-        views.CatalogOfferingListView.as_view(),
+        views.CohortOfferingListView.as_view(),
         name="offering_list",
     ),
     path(
-        f"{API_PREFIX}/offerings/<uuid:catalog_uuid>/",
-        views.CatalogOfferingCreateView.as_view(),
+        f"{API_PREFIX}/offerings/<uuid:cohort_uuid>/",
+        views.CohortOfferingCreateView.as_view(),
         name="offering_create",
     ),
     path(
@@ -39,12 +39,12 @@ urlpatterns = [
     ),
     path(
         f"{API_PREFIX}/memberships/",
-        views.CatalogMembershipListView.as_view(),
+        views.CohortMembershipListView.as_view(),
         name="membership_list",
     ),
     path(
-        f"{API_PREFIX}/memberships/<uuid:catalog_uuid>/",
-        views.CatalogMembershipCreateView.as_view(),
+        f"{API_PREFIX}/memberships/<uuid:cohort_uuid>/",
+        views.CohortMembershipCreateView.as_view(),
         name="membership_create",
     ),
     path(
