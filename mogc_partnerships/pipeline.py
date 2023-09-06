@@ -5,7 +5,7 @@ from opaque_keys.edx.keys import CourseKey
 from openedx_filters.filters import PipelineStep
 from openedx_filters.learning.filters import CourseEnrollmentStarted
 
-from .models import CatalogOffering, Partner, PartnerOffering
+from .models import CohortOffering, Partner, PartnerOffering
 
 
 class MembershipRequiredEnrollment(PipelineStep):
@@ -15,10 +15,10 @@ class MembershipRequiredEnrollment(PipelineStep):
         try:
             partner = Partner.objects.get(org=course_key.org)
             offering = partner.offerings.get(course_key=course_key)
-            catalog_ids = CatalogOffering.objects.filter(offering=offering).values_list(
+            cohort_ids = CohortOffering.objects.filter(offering=offering).values_list(
                 "id", flat=True
             )
-            if user.memberships.filter(catalog__in=catalog_ids).exists():
+            if user.memberships.filter(cohort__in=cohort_ids).exists():
                 return {}
             raise CourseEnrollmentStarted.PreventEnrollment(
                 "This course requires a partner membership."
@@ -47,10 +47,10 @@ class HidePartnerCourseAboutPages(PipelineStep):
         try:
             partner = Partner.objects.get(org=org)
             offering = partner.offerings.get(course_key=course_key)
-            catalog_ids = CatalogOffering.objects.filter(offering=offering).values_list(
+            cohort_ids = CohortOffering.objects.filter(offering=offering).values_list(
                 "id", flat=True
             )
-            if user.memberships.filter(catalog__in=catalog_ids).exists():
+            if user.memberships.filter(cohort__in=cohort_ids).exists():
                 return {}
             raise Http404
         except PartnerOffering.DoesNotExist:

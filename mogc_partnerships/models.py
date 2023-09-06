@@ -25,9 +25,9 @@ class PartnerQuerySet(models.QuerySet):
 
     def for_user(self, user):
         """Keeps only partners where the given user is a manager or member."""
-        user_catalog_memberships = user.memberships.all()
-        membership_partner_ids = user_catalog_memberships.values_list(
-            "catalog__partner_id", flat=True
+        user_cohort_memberships = user.memberships.all()
+        membership_partner_ids = user_cohort_memberships.values_list(
+            "cohort__partner_id", flat=True
         )
         management_partner_ids = user.partners.values_list("id", flat=True)
         all_partner_ids = list(membership_partner_ids) + list(management_partner_ids)
@@ -100,11 +100,11 @@ class PartnerOffering(TimeStampedModel):
         return f"{self.course_key} [{self.partner}]"
 
 
-class PartnerCatalog(TimeStampedModel):
+class PartnerCohort(TimeStampedModel):
     """A grouping of course offerings made available to learners by a partner."""
 
     partner = models.ForeignKey(
-        Partner, related_name="catalogs", on_delete=models.CASCADE
+        Partner, related_name="cohorts", on_delete=models.CASCADE
     )
     name = models.CharField(max_length=255)
     uuid = models.UUIDField(default=uuid4)
@@ -114,23 +114,23 @@ class PartnerCatalog(TimeStampedModel):
         return f"{self.name} ({self.uuid})"
 
 
-class CatalogOffering(TimeStampedModel):
-    """A course offered to learners through a catalog."""
+class CohortOffering(TimeStampedModel):
+    """A course offered to learners through a cohort."""
 
-    catalog = models.ForeignKey(
-        PartnerCatalog, related_name="offerings", on_delete=models.CASCADE
+    cohort = models.ForeignKey(
+        PartnerCohort, related_name="offerings", on_delete=models.CASCADE
     )
     offering = models.ForeignKey(PartnerOffering, on_delete=models.CASCADE)
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["catalog", "offering"], name="unique_offering_per_catalog"
+                fields=["cohort", "offering"], name="unique_offering_per_cohort"
             )
         ]
 
     def __str__(self):
-        return f"{self.offering.course_key} in {self.catalog.name}"
+        return f"{self.offering.course_key} in {self.cohort.name}"
 
     @property
     def details(self):
@@ -143,22 +143,22 @@ class CatalogOffering(TimeStampedModel):
         )
 
 
-class CatalogMembershipQuerySet(models.QuerySet):
-    """Custom QuerySet for CatalogMembership objects."""
+class CohortMembershipQuerySet(models.QuerySet):
+    """Custom QuerySet for CohortMembership objects."""
 
     def pending(self):
         return self.filter(user=None)
 
 
-class CatalogMembership(TimeStampedModel):
-    """A learner's membership in a catalog.
+class CohortMembership(TimeStampedModel):
+    """A learner's membership in a cohort.
 
     Memberships without an associated user are considered to be invites. When a user
     with a matching email registers they will be associated with the membership.
     """
 
-    catalog = models.ForeignKey(
-        PartnerCatalog, related_name="memberships", on_delete=models.CASCADE
+    cohort = models.ForeignKey(
+        PartnerCohort, related_name="memberships", on_delete=models.CASCADE
     )
     email = models.EmailField()
     user = models.ForeignKey(
@@ -169,15 +169,15 @@ class CatalogMembership(TimeStampedModel):
         blank=True,
     )
 
-    objects = CatalogMembershipQuerySet.as_manager()
+    objects = CohortMembershipQuerySet.as_manager()
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["catalog", "email"], name="unique_email_per_catalog"
+                fields=["cohort", "email"], name="unique_email_per_cohort"
             ),
             models.UniqueConstraint(
-                fields=["catalog", "user"], name="unique_user_per_catalog"
+                fields=["cohort", "user"], name="unique_user_per_cohort"
             ),
         ]
 
