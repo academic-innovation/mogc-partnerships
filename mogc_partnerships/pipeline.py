@@ -16,7 +16,7 @@ class MembershipRequiredEnrollment(PipelineStep):
             partner = Partner.objects.get(org=course_key.org)
             offering = partner.offerings.get(course_key=course_key)
             cohort_ids = CohortOffering.objects.filter(offering=offering).values_list(
-                "id", flat=True
+                "cohort_id", flat=True
             )
             if user.memberships.filter(cohort__in=cohort_ids).exists():
                 return {}
