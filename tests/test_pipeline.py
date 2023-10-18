@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
+from django.contrib.auth.models import AnonymousUser
 from django.http.response import Http404
 from django.test import TestCase, override_settings
-from django.contrib.auth.models import AnonymousUser
 
 from crum import impersonate
 from opaque_keys.edx.keys import CourseKey
