@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from django.contrib.auth.models import AnonymousUser
 from django.http.response import Http404
 from django.test import TestCase, override_settings
 
@@ -93,6 +94,19 @@ class TestHidePartnerCourseAboutPages(TestCase):
 
     def test_hides_partner_courses(self):
         user = UserFactory()
+        course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
+        CohortOfferingFactory(
+            cohort__partner__org=course_key.org, offering__course_key=course_key
+        )
+        course_details = CourseDetails.from_course_key(course_key)
+        context = {"course_details": course_details}
+        template_name = "page_template.html"
+        with impersonate(user):
+            with self.assertRaises(Http404):
+                CourseAboutRenderStarted.run_filter(context, template_name)
+
+    def test_hides_partner_courses_anon_user(self):
+        user = AnonymousUser()
         course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
         CohortOfferingFactory(
             cohort__partner__org=course_key.org, offering__course_key=course_key

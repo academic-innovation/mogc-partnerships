@@ -36,7 +36,8 @@ class HidePartnerCourseAboutPages(PipelineStep):
 
     def run_filter(self, context, template_name):
         user = get_current_user()
-        print(context)
+        if not user or user.is_anonymous:
+            raise Http404
         course_details = context["course_details"]
         org = course_details.org
         course_id = course_details.course_id
