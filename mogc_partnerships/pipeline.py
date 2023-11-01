@@ -18,7 +18,7 @@ class MembershipRequiredEnrollment(PipelineStep):
             cohort_ids = CohortOffering.objects.filter(offering=offering).values_list(
                 "cohort_id", flat=True
             )
-            if user.memberships.filter(cohort__in=cohort_ids).exists():
+            if user.memberships.filter(cohort__in=cohort_ids).exists() or user.is_staff:
                 return {}
             raise CourseEnrollmentStarted.PreventEnrollment(
                 "This course requires a partner membership."

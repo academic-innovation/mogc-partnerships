@@ -70,6 +70,16 @@ class TestMembershipRequiredEnrollment(TestCase):
         result = CourseEnrollmentStarted.run_filter(user, course_key, mode)
         self.assertEqual(result, (user, course_key, mode))
 
+    def test_allows_partner_staff_enrollment_without_cohort_membership(self):
+        user = UserFactory(is_staff=True)
+        course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
+        mode = "honor"
+        CohortOfferingFactory(
+            cohort__partner__org=course_key.org, offering__course_key=course_key
+        )
+        result = CourseEnrollmentStarted.run_filter(user, course_key, mode)
+        self.assertEqual(result, (user, course_key, mode))
+
 
 @override_settings(
     OPEN_EDX_FILTERS_CONFIG={
