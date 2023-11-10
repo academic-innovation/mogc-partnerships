@@ -14,12 +14,11 @@ def user_can_access_course(user, course_key):
     cohort_ids = CohortOffering.objects.filter(offering=offering).values_list(
         "cohort_id", flat=True
     )
-    user_in_cohort = user.memberships.filter(cohort__in=cohort_ids).exists()
-    user_is_partner_manager = user.management_memberships.filter(
+    cohort_membership = user.memberships.filter(cohort__in=cohort_ids)
+    management_membership = user.management_memberships.filter(
         user_id=user.id, partner_id=partner.id
-    ).exists()
-    if user_in_cohort or user_is_partner_manager:
-        return True
+    )
+    return cohort_membership.exists() or management_membership.exists()
 
 
 class MembershipRequiredEnrollment(PipelineStep):
