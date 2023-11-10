@@ -14,6 +14,7 @@ from openedx_filters.learning.filters import (
 from mogc_partnerships.factories import (
     CohortMembershipFactory,
     CohortOfferingFactory,
+    PartnerManagementMembershipFactory,
     UserFactory,
 )
 
@@ -67,6 +68,17 @@ class TestMembershipRequiredEnrollment(TestCase):
             cohort__partner__org=course_key.org, offering__course_key=course_key
         )
         CohortMembershipFactory(cohort=offering.cohort, email=user.email, user=user)
+        result = CourseEnrollmentStarted.run_filter(user, course_key, mode)
+        self.assertEqual(result, (user, course_key, mode))
+
+    def test_allows_partner_staff_enrollment_without_cohort_membership(self):
+        user = UserFactory(is_staff=True)
+        course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
+        mode = "honor"
+        offering = CohortOfferingFactory(
+            cohort__partner__org=course_key.org, offering__course_key=course_key
+        )
+        PartnerManagementMembershipFactory(partner=offering.cohort.partner, user=user)
         result = CourseEnrollmentStarted.run_filter(user, course_key, mode)
         self.assertEqual(result, (user, course_key, mode))
 
@@ -125,6 +137,20 @@ class TestHidePartnerCourseAboutPages(TestCase):
             cohort__partner__org=course_key.org, offering__course_key=course_key
         )
         CohortMembershipFactory(cohort=offering.cohort, email=user.email, user=user)
+        course_details = CourseDetails.from_course_key(course_key)
+        context = {"course_details": course_details}
+        template_name = "page_template.html"
+        with impersonate(user):
+            result = CourseAboutRenderStarted.run_filter(context, template_name)
+        self.assertEqual(result, (context, template_name))
+
+    def test_displays_courses_to_partner_managers(self):
+        user = UserFactory()
+        course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
+        offering = CohortOfferingFactory(
+            cohort__partner__org=course_key.org, offering__course_key=course_key
+        )
+        PartnerManagementMembershipFactory(partner=offering.cohort.partner, user=user)
         course_details = CourseDetails.from_course_key(course_key)
         context = {"course_details": course_details}
         template_name = "page_template.html"
