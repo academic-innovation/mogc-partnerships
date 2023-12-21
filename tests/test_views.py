@@ -1,4 +1,5 @@
 import pytest
+import json
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from mogc_partnerships import factories, views
@@ -480,6 +481,20 @@ class TestCohortMembershipCreateView:
         assert response.status_code == 403
         assert not cohort.memberships.exists()
 
+    def test_bulk_create(self, api_rf):
+        """Managers can upload a list of emails to bulk create memberships"""
+
+        manager = factories.PartnerManagementMembershipFactory()
+        cohort = factories.PartnerCohortFactory(partner=manager.partner)
+        member_create_view = views.CohortMembershipCreateView.as_view()
+        user_data = [{"email": "test-{}@test.com".format(i)} for i in range(100)]
+
+        request = api_rf.post(f"/memberships/{cohort.uuid}/", json.dumps(user_data), content_type="application/json")
+        force_authenticate(request, manager.user)
+
+        response = member_create_view(request, cohort_uuid=cohort.uuid)
+
+        assert response.status_code == 201
 
 @pytest.mark.django_db
 class TestEnrollmentRecordListView:
