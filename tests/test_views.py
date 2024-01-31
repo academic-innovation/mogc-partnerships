@@ -489,12 +489,17 @@ class TestCohortMembershipCreateView:
         member_create_view = views.CohortMembershipCreateView.as_view()
         user_data = [{"email": "test-{}@test.com".format(i)} for i in range(100)]
 
-        request = api_rf.post(f"/memberships/{cohort.uuid}/", json.dumps(user_data), content_type="application/json")
+        request = api_rf.post(
+            f"/memberships/{cohort.uuid}/",
+            json.dumps(user_data),
+            content_type="application/json"
+        )
         force_authenticate(request, manager.user)
 
         response = member_create_view(request, cohort_uuid=cohort.uuid)
 
         assert response.status_code == 201
+
 
 @pytest.mark.django_db
 class TestEnrollmentRecordListView:

@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from rest_framework.exceptions import PermissionDenied
 
 from . import models
 
@@ -100,7 +99,9 @@ class CohortMembershipListSerializer(serializers.ListSerializer):
         membership_accounts = User.objects.filter(
             email__in=[email for email in member_emails]
         ).values_list()
-        account_email_map = { user.email: user for user in membership_accounts }
+        account_email_map = {
+            user.email: user for user in membership_accounts
+        }
 
         cohort_memberships = [
             models.CohortMembership(
@@ -108,7 +109,9 @@ class CohortMembershipListSerializer(serializers.ListSerializer):
             ) for member_email in member_emails
         ]
 
-        return models.CohortMembership.objects.bulk_create(cohort_memberships)
+        return models.CohortMembership.objects.bulk_create(
+            cohort_memberships, ignore_conflicts=True
+        )
 
 
 class CohortMembershipSerializer(serializers.ModelSerializer):
