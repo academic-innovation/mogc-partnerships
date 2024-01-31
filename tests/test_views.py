@@ -492,7 +492,7 @@ class TestCohortMembershipCreateView:
         request = api_rf.post(
             f"/memberships/{cohort.uuid}/",
             json.dumps(user_data),
-            content_type="application/json"
+            content_type="application/json",
         )
         force_authenticate(request, manager.user)
 

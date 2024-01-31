@@ -194,6 +194,7 @@ class CohortMembershipCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save()
 
+
 class EnrollmentRecordListView(generics.ListAPIView):
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]

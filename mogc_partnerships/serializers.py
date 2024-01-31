@@ -99,14 +99,15 @@ class CohortMembershipListSerializer(serializers.ListSerializer):
         membership_accounts = User.objects.filter(
             email__in=[email for email in member_emails]
         ).values_list()
-        account_email_map = {
-            user.email: user for user in membership_accounts
-        }
+        account_email_map = {user.email: user for user in membership_accounts}
 
         cohort_memberships = [
             models.CohortMembership(
-                user=account_email_map.get(member_email), cohort=cohort, email=member_email
-            ) for member_email in member_emails
+                user=account_email_map.get(member_email),
+                cohort=cohort,
+                email=member_email,
+            )
+            for member_email in member_emails
         ]
 
         return models.CohortMembership.objects.bulk_create(
