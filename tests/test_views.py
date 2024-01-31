@@ -1,5 +1,6 @@
-import pytest
 import json
+
+import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from mogc_partnerships import factories, views
