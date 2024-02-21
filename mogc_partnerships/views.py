@@ -189,10 +189,7 @@ class CohortMembershipCreateView(generics.CreateAPIView):
         except PartnerCohort.DoesNotExist:
             raise PermissionDenied("No")
 
-        return {"cohort": cohort, "user": user}
-
-    def perform_create(self, serializer):
-        serializer.save()
+        return {"cohort": cohort}
 
 
 class EnrollmentRecordListView(generics.ListAPIView):

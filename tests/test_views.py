@@ -500,6 +500,7 @@ class TestCohortMembershipCreateView:
         response = member_create_view(request, cohort_uuid=cohort.uuid)
 
         assert response.status_code == 201
+        assert len(response.data) == 100
 
 
 @pytest.mark.django_db
