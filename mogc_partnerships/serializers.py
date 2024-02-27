@@ -117,8 +117,7 @@ class CohortMembershipListSerializer(serializers.ListSerializer):
         # bulk_create doesn't return autoincremented IDs with MySQL DBs
         # so we have to query results separately
         return models.CohortMembership.objects.filter(
-            email__in=[cm.email for cm in objects],
-            cohort=cohort
+            email__in=[cm.email for cm in objects], cohort=cohort
         )
 
 
