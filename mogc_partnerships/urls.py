@@ -57,15 +57,4 @@ urlpatterns = [
         views.EnrollmentRecordListView.as_view(),
         name="record_list",
     ),
-    # TODO: Remove the following routes after the MFE has been updated.
-    path(
-        f"{API_PREFIX}/catalogs/",
-        views.CohortListView.as_view(),
-        name="catalog_list",
-    ),
-    path(
-        f"{API_PREFIX}/catalogs/<uuid:uuid>",
-        views.CohortDetailView.as_view(),
-        name="catalog_detail",
-    ),
 ]

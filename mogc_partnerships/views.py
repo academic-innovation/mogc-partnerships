@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect
 
@@ -172,24 +171,25 @@ class CohortMembershipCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = serializers.CohortMembershipSerializer
 
-    def perform_create(self, serializer):
-        user = self.request.user
-        managed_partners = Partner.objects.active().for_user(user)
-        managed_cohorts = PartnerCohort.objects.filter(
-            partner__in=managed_partners.values_list("id", flat=True)
-        )
-        cohort_uuid = self.kwargs.get("cohort_uuid")
+    def get_serializer(self, *args, **kwargs):
+        if isinstance(kwargs.get("data", {}), list):
+            kwargs["many"] = True
+
+        return super(CohortMembershipCreateView, self).get_serializer(*args, **kwargs)
+
+    def get_serializer_context(self):
         try:
+            user = self.request.user
+            managed_partners = Partner.objects.active().for_user(user)
+            managed_cohorts = PartnerCohort.objects.filter(
+                partner__in=managed_partners.values_list("id", flat=True)
+            )
+            cohort_uuid = self.kwargs.get("cohort_uuid")
             cohort = managed_cohorts.get(uuid=cohort_uuid)
         except PartnerCohort.DoesNotExist:
             raise PermissionDenied("No")
-        email = serializer.validated_data.get("email")
-        User = get_user_model()
-        try:
-            membership_account = User.objects.get(email=email)
-        except User.DoesNotExist:
-            membership_account = None
-        serializer.save(cohort=cohort, user=membership_account)
+
+        return {"cohort": cohort}
 
 
 class EnrollmentRecordListView(generics.ListAPIView):
