@@ -24,20 +24,7 @@ mkdir tutor_root
 export TUTOR_ROOT=$(pwd)/tutor_root
 ```
 
-### 4. Set up the [mogc-partnerships backend API](https://github.com/academic-innovation/mogc-partnerships):
-```
-gh repo clone academic-innovation/mogc-partnerships $(tutor config printroot)/env/build/openedx/requirements
-echo "-e ./mogc-partnerships/" >> $(tutor config printroot)/env/build/openedx/requirements/private.txt
-```
-
-*Optional:* Install the [legacy theme](https://github.com/academic-innovation/mogc-theme).
-
-### 5. Save your config. This creates the necessary Docker files from Tutor templates:
-```
-tutor config save
-```
-
-### 6. Launch your dev instance:
+### 4. Launch your dev instance:
 ```
 tutor dev launch
 ```
@@ -49,20 +36,55 @@ Confirm containers are running:
 tutor dev status
 ```
 
-### 7. Create a superuser for LMS Admin access:
+### 5. Create a superuser for LMS Admin access:
 ```
 tutor dev do createuser --staff --superuser <NAME> <EMAIL>
 ```
 
-### 8. Install and enable the [MOGC MFE plugin](https://github.com/academic-innovation/tutor-mogc-partnerships):
+### 6. Set up the [mogc-partnerships backend API](https://github.com/academic-innovation/mogc-partnerships):
 ```
-pip install git+https://github.com/academic-innovation/tutor-mogc-partnerships
+cd $(tutor config printroot)/env/build/openedx/requirements && gh repo clone academic-innovation/mogc-partnerships
+echo "-e ./mogc-partnerships/" >> $(tutor config printroot)/env/build/openedx/requirements/private.txt
+```
+
+### 7. Enable the plugin:
+```
 tutor plugins enable mogc_partnerships
+```
+
+### 8. Clone [Partner Portal MFE repo](https://github.com/academic-innovation/frontend-app-mogc-partners):
+```
+gh repo clone academic-innovation/frontend-app-mogc-partners
+```
+*Note*: This can be installed wherever you'd like. Ensure that you have the version of Node noted in the `.nvmrc` file installed and activated.
+
+See the [nvm repo](https://github.com/nvm-sh/nvm) for installation and usage steps.
+
+### 9. Add mount point for Partner Portal MFE:
+```
+tutor mounts add ../frontend-app-mogc-partners
+```
+*Note*: the mount point should match the directory where you cloned the repo above.
+
+### 10. Save your config. This creates the necessary Docker files from Tutor templates:
+```
+tutor config save
+```
+
+### 11. Stop and launch again:
+
+This step will bundle the mogc-partnerships backend API plugin and frontend-app-mogc-partners MFE.
+```
+tutor dev stop && tutor dev launch
 ```
 
 Now you should be able to connect and login to the [LMS admin](http://local.overhang.io:8000/admin/)!
 
 See [Setup Troubleshooting](#setup-troubleshooting) if you encounter errors.
+
+### Legacy Theme (Optional)
+
+The [legacy theme](https://github.com/academic-innovation/mogc-theme) is where the HTML course certificates live. Follow the steps in that repo to install and activate the theme in your local dev environment.
 
 
 ### Nutmeg Setup
