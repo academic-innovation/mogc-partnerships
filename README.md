@@ -39,7 +39,7 @@ tutor config save
 
 ### 6. Launch your dev instance:
 ```
-tutor dev launch --interactive
+tutor dev launch
 ```
 
 This will guide you through introductory setup steps, build the necessary docker images, and start the services.
@@ -51,7 +51,7 @@ tutor dev status
 
 ### 7. Create a superuser for LMS Admin access:
 ```
-tutor dev createuser --staff --superuser <NAME> <EMAIL>
+tutor dev do createuser --staff --superuser <NAME> <EMAIL>
 ```
 
 ### 8. Install and enable the [MOGC MFE plugin](https://github.com/academic-innovation/tutor-mogc-partnerships):
