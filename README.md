@@ -82,7 +82,7 @@ This step will bundle the mogc-partnerships backend API plugin and frontend-app-
 tutor dev stop && tutor dev launch
 ```
 
-Now you should be able to connect and login to the [LMS admin](http://local.overhang.io:8000/admin/)!
+Once the build completes, Tutor will output a list of local URLs for LMS Admin, various MFEs and the Partner Portal.
 
 See [Setup Troubleshooting](#setup-troubleshooting) if you encounter errors.
 
