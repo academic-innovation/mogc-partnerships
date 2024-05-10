@@ -56,6 +56,10 @@ tutor plugins enable mogc_partnerships
 ```
 gh repo clone academic-innovation/frontend-app-mogc-partners
 ```
+And install dependencies:
+```
+npm install
+```
 *Note*: This can be installed wherever you'd like. Ensure that you have the version of Node noted in the `.nvmrc` file installed and activated.
 
 See the [nvm repo](https://github.com/nvm-sh/nvm) for installation and usage steps.
@@ -73,7 +77,7 @@ tutor config save
 
 ### 11. Stop and launch again:
 
-This step will bundle the mogc-partnerships backend API plugin and frontend-app-mogc-partners MFE.
+This step will bundle the mogc-partnerships backend API plugin and frontend-app-mogc-partners MFE into the Tutor Docker images and rebuild.
 ```
 tutor dev stop && tutor dev launch
 ```
