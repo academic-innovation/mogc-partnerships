@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from . import models
+from .messages import send_cohort_membership_invite, send_cohort_membership_invites
 
 
 class PartnerOfferingSerializer(serializers.ModelSerializer):
@@ -116,9 +117,13 @@ class CohortMembershipListSerializer(serializers.ListSerializer):
         )
         # bulk_create doesn't return autoincremented IDs with MySQL DBs
         # so we have to query results separately
-        return models.CohortMembership.objects.filter(
+        cohort_memberships = models.CohortMembership.objects.filter(
             email__in=[cm.email for cm in objects], cohort=cohort
         )
+
+        send_cohort_membership_invites(cohort_memberships)
+
+        return cohort_memberships
 
 
 class CohortMembershipSerializer(serializers.ModelSerializer):
@@ -144,7 +149,11 @@ class CohortMembershipSerializer(serializers.ModelSerializer):
         except User.DoesNotExist:
             validated_data["user"] = None
 
-        return models.CohortMembership.objects.create(**validated_data)
+        cohort_membership = models.CohortMembership.objects.create(**validated_data)
+
+        send_cohort_membership_invite(cohort_membership)
+
+        return cohort_membership
 
 
 class EnrollmentRecordSerializer(serializers.ModelSerializer):

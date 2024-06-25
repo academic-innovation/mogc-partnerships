@@ -10,6 +10,7 @@ setup(
         "openedx-events>=0.8.1",
         "openedx-filters>=0.7.0",
         "edx-opaque-keys",
+        "edx-ace",
     ],
     entry_points={
         "lms.djangoapp": [
