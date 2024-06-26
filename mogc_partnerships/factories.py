@@ -1,7 +1,7 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from . import models
+from . import models, enums
 
 
 class UserFactory(DjangoModelFactory):
@@ -86,6 +86,7 @@ class CohortMembershipFactory(DjangoModelFactory):
     cohort = factory.SubFactory(PartnerCohortFactory)
     email = factory.Faker("email")
     user = factory.SubFactory(UserFactory, email=factory.SelfAttribute("..email"))
+    active = True
 
     class Meta:
         model = models.CohortMembership

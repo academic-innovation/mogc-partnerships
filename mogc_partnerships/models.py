@@ -7,6 +7,8 @@ from django.utils import timezone
 
 from opaque_keys.edx.django.models import CourseKeyField
 
+from . import enums
+
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
@@ -168,6 +170,7 @@ class CohortMembership(TimeStampedModel):
         null=True,
         blank=True,
     )
+    active = models.BooleanField(default=True)
 
     objects = CohortMembershipQuerySet.as_manager()
 
@@ -181,12 +184,17 @@ class CohortMembership(TimeStampedModel):
             ),
         ]
 
+    @property
+    def status(self):
+        if not self.active:
+            return enums.CohortMembershipStatus.DEACTIVATED.value        
+        if self.user is not None:
+            return enums.CohortMembershipStatus.ACTIVATED.value
+        return enums.CohortMembershipStatus.INVITED.value
+
+
     def __str__(self):
         return self.email
-
-    @property
-    def activated(self):
-        return self.user is not None
 
 
 class EnrollmentRecordQuerySet(models.QuerySet):

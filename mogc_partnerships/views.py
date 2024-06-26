@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 
 from mogc_partnerships import serializers
 
-from . import compat
+from . import compat, enums
 from .models import (
     CohortMembership,
     CohortOffering,
@@ -190,7 +190,43 @@ class CohortMembershipCreateView(generics.CreateAPIView):
             raise PermissionDenied("No")
 
         return {"cohort": cohort}
+    
 
+class CohortMembershipUpdateView(generics.UpdateAPIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = serializers.CohortMembershipSerializer
+
+    def get_queryset(self):
+        return CohortMembership.objects.filter(
+            pk=self.kwargs.get("pk"),
+            cohort__uuid=self.kwargs.get("cohort_uuid")
+        )
+    
+    def get_object(self):
+        queryset = self.get_queryset()
+        return get_object_or_404(queryset)
+    
+    def unenroll(self, cohort_member):
+        enrollments = [e for e in cohort_member.user.enrollment_records.all() if e.offering.cohort == cohort_member.cohort]
+        import pdb; pdb.set_trace()
+        if not enrollments:
+            return
+
+        for e in enrollments:
+            e.is_active = False
+            e.save()
+    
+    def perform_update(self, serializer):
+        updated_member = super().perform_update(serializer)
+
+        cohort_member = self.get_object()
+        user = cohort_member.user
+        if user:
+            self.unenroll(cohort_member)
+
+        return updated_member
+    
 
 class EnrollmentRecordListView(generics.ListAPIView):
     authentication_classes = [SessionAuthentication]

@@ -3,7 +3,7 @@ import json
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from mogc_partnerships import factories, views
+from mogc_partnerships import factories, views, enums
 from mogc_partnerships.models import PartnerCohort
 
 
@@ -501,6 +501,56 @@ class TestCohortMembershipCreateView:
 
         assert response.status_code == 201
         assert len(response.data) == 100
+
+
+@pytest.mark.django_db
+class TestCohortMembershipUpdateView:
+    """Tests for CohortMembershipUpdateView."""
+
+    def _setup(self, api_rf, with_enrollments=False):
+        self.user = factories.UserFactory()
+        self.manager = factories.PartnerManagementMembershipFactory()
+        self.cohort = factories.PartnerCohortFactory(partner=self.manager.partner)
+        self.membership = factories.CohortMembershipFactory(cohort=self.cohort)
+        if with_enrollments:
+            self.enrollment_records = [
+                factories.EnrollmentRecordFactory(
+                    user=self.user,
+                    offering=factories.PartnerOfferingFactory(partner=self.manager.partner),
+                    is_active=True
+                )
+            ]
+            self.user.enrollment_records = self.enrollment_records.set()
+        self.request = api_rf.patch(
+            f"/memberships/{self.cohort.uuid}/{self.membership.id}/",
+            {"active": False},
+            format="json",
+        )
+        force_authenticate(self.request, self.manager.user)
+        self.member_update_view = views.CohortMembershipUpdateView.as_view()
+
+    def test_manager_can_update_membership(self, api_rf):
+        """Managers can update membership for cohorts they manage."""
+        self._setup(api_rf)
+
+        response = self.member_update_view(
+            self.request, cohort_uuid=self.cohort.uuid, pk=self.membership.id
+        )
+        assert response.status_code == 200
+        assert (
+            self.cohort.memberships.first().status
+            == enums.CohortMembershipStatus.DEACTIVATED.value
+        )
+
+    def test_course_enrollments_deactivated_on_status_change(self, api_rf):
+        self._setup(api_rf, with_enrollments=True)
+
+        response = self.member_update_view(
+            self.request, cohort_uuid=self.cohort.uuid, pk=self.membership.id
+        )
+        import pdb; pdb.set_trace()
+        assert response.status_code == 200
+        assert all([e.is_active == False for e in self.enrollment_records]) == True
 
 
 @pytest.mark.django_db
