@@ -215,6 +215,7 @@ class EnrollmentRecord(TimeStampedModel):
     offering = models.ForeignKey(
         PartnerOffering, related_name="enrollment_records", on_delete=models.CASCADE
     )
+    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, null=True)
     mode = models.CharField(max_length=64)
     grade = models.PositiveSmallIntegerField(default=0)
     progress = models.PositiveSmallIntegerField(default=0)
@@ -233,4 +234,4 @@ class EnrollmentRecord(TimeStampedModel):
         ]
 
     def __str__(self):
-        return f"{self.user} in {self.offering}"
+        return f"{self.user} in {self.offering} - active: {self.is_active}"

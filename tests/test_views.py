@@ -507,35 +507,52 @@ class TestCohortMembershipCreateView:
 class TestCohortMembershipUpdateView:
     """Tests for CohortMembershipUpdateView."""
 
-    def _setup(self, api_rf, with_enrollments=False):
-        self.user = factories.UserFactory()
-        self.manager = factories.PartnerManagementMembershipFactory()
-        self.cohort = factories.PartnerCohortFactory(partner=self.manager.partner)
-        self.membership = factories.CohortMembershipFactory(cohort=self.cohort)
-        if with_enrollments:
-            self.enrollment_records = [
-                factories.EnrollmentRecordFactory(
-                    user=self.user,
-                    offering=factories.PartnerOfferingFactory(partner=self.manager.partner),
-                    is_active=True
-                )
-            ]
-            self.user.enrollment_records = self.enrollment_records.set()
-        self.request = api_rf.patch(
+    def _setup_enrollments(self):
+        self.offering = factories.PartnerOfferingFactory(partner=self.partner)
+        self.cohort_offering = factories.CohortOfferingFactory(
+            cohort=self.cohort, offering=self.offering
+        )
+        self.enrollment_records = [
+            factories.EnrollmentRecordFactory(
+                user=self.user,
+                partner=self.partner,
+                offering=self.offering,
+                is_active=True,
+            )
+        ]
+        self.user.enrollment_records.set(self.enrollment_records)
+
+    def _make_request(self, api_rf, payload=None):
+        request = api_rf.patch(
             f"/memberships/{self.cohort.uuid}/{self.membership.id}/",
-            {"active": False},
+            payload,
             format="json",
         )
-        force_authenticate(self.request, self.manager.user)
+        force_authenticate(request, self.manager.user)
+        return self.member_update_view(
+            request, cohort_uuid=self.cohort.uuid, pk=self.membership.id
+        )
+
+    def _setup(self, with_enrollments=False):
+        self.user = factories.UserFactory()
+        self.manager = factories.PartnerManagementMembershipFactory()
+
+        self.partner = self.manager.partner
+        self.cohort = factories.PartnerCohortFactory(partner=self.partner)
+        self.membership = factories.CohortMembershipFactory(
+            cohort=self.cohort, user=self.user
+        )
+
+        if with_enrollments:
+            self._setup_enrollments()
+
         self.member_update_view = views.CohortMembershipUpdateView.as_view()
 
     def test_manager_can_update_membership(self, api_rf):
         """Managers can update membership for cohorts they manage."""
-        self._setup(api_rf)
+        self._setup()
 
-        response = self.member_update_view(
-            self.request, cohort_uuid=self.cohort.uuid, pk=self.membership.id
-        )
+        response = self._make_request(api_rf, payload={"active": False})
         assert response.status_code == 200
         assert (
             self.cohort.memberships.first().status
@@ -543,14 +560,25 @@ class TestCohortMembershipUpdateView:
         )
 
     def test_course_enrollments_deactivated_on_status_change(self, api_rf):
-        self._setup(api_rf, with_enrollments=True)
+        """
+        Confirms enrollment is marked inactive when a user is deactivated.
+        """
+        self._setup(with_enrollments=True)
 
-        response = self.member_update_view(
-            self.request, cohort_uuid=self.cohort.uuid, pk=self.membership.id
-        )
-        import pdb; pdb.set_trace()
+        response = self._make_request(api_rf, payload={"active": False})
         assert response.status_code == 200
-        assert all([e.is_active == False for e in self.enrollment_records]) == True
+        print(self.enrollment_records);
+        assert all([e.is_active == False for e in self.enrollment_records])
+
+    def test_course_enrollments_if_multiple_cohorts(self, api_rf):
+        """
+        Confirms enrollments are not affected if a user is a member of multiple cohorts with the same cohort offering.
+        """
+        self._setup(with_enrollments=True)
+
+        # Create new cohort
+        self.cohort = factories.PartnerCohortFactory(partner=self.manager.partner)
+        ...
 
 
 @pytest.mark.django_db

@@ -20,4 +20,4 @@ class TestEnrollmentRecord:
             offering__course_key="course-v1:edX+DemoX+Demo_Course",
             offering__partner__name="Partner",
         )
-        assert str(record) == "username in course-v1:edX+DemoX+Demo_Course [Partner]"
+        assert str(record) == "username in course-v1:edX+DemoX+Demo_Course [Partner] - active: True"

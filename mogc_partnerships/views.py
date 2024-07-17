@@ -190,7 +190,7 @@ class CohortMembershipCreateView(generics.CreateAPIView):
             raise PermissionDenied("No")
 
         return {"cohort": cohort}
-    
+
 
 class CohortMembershipUpdateView(generics.UpdateAPIView):
     authentication_classes = [SessionAuthentication]
@@ -199,24 +199,44 @@ class CohortMembershipUpdateView(generics.UpdateAPIView):
 
     def get_queryset(self):
         return CohortMembership.objects.filter(
-            pk=self.kwargs.get("pk"),
-            cohort__uuid=self.kwargs.get("cohort_uuid")
+            pk=self.kwargs.get("pk"), cohort__uuid=self.kwargs.get("cohort_uuid")
         )
-    
+
     def get_object(self):
         queryset = self.get_queryset()
         return get_object_or_404(queryset)
-    
+
     def unenroll(self, cohort_member):
-        enrollments = [e for e in cohort_member.user.enrollment_records.all() if e.offering.cohort == cohort_member.cohort]
-        import pdb; pdb.set_trace()
-        if not enrollments:
+        """
+        The same course can be offered via multiple cohorts within the same partner.
+        We want to check if a user is enrolled in an offering, and unenroll iff the offering is not available in
+        another cohort that the user is also in.
+        """
+        enrollment_records = (
+            EnrollmentRecord.objects.select_related("partner")
+            .select_related("offering")
+            .filter(user=cohort_member.user, is_active=True)
+        )
+        if not enrollment_records:
             return
 
-        for e in enrollments:
+        cohort_offerings = CohortOffering.objects.filter(
+            cohort=cohort_member.cohort
+        ).values_list("offering", flat=True)
+        partner_offerings = PartnerOffering.objects.exclude(
+            pk__in=cohort_offerings
+        ).values_list("pk", flat=True)
+
+        for e in enrollment_records:
+            if e.offering.id in partner_offerings and e.is_active:
+                continue
+            if e.offering.id not in cohort_offerings:
+                # This shouldn't happen
+                continue
             e.is_active = False
             e.save()
-    
+        print(enrollment_records)
+
     def perform_update(self, serializer):
         updated_member = super().perform_update(serializer)
 
@@ -226,7 +246,7 @@ class CohortMembershipUpdateView(generics.UpdateAPIView):
             self.unenroll(cohort_member)
 
         return updated_member
-    
+
 
 class EnrollmentRecordListView(generics.ListAPIView):
     authentication_classes = [SessionAuthentication]
