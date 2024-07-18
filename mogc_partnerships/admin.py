@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from . import models, enums
+from . import enums, models
 
 
 class MangerInline(admin.TabularInline):

@@ -187,11 +187,10 @@ class CohortMembership(TimeStampedModel):
     @property
     def status(self):
         if not self.active:
-            return enums.CohortMembershipStatus.DEACTIVATED.value        
+            return enums.CohortMembershipStatus.DEACTIVATED.value
         if self.user is not None:
             return enums.CohortMembershipStatus.ACTIVATED.value
         return enums.CohortMembershipStatus.INVITED.value
-
 
     def __str__(self):
         return self.email

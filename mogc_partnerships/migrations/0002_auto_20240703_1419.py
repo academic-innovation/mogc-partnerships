@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mogc_partnerships', '0001_initial'),
+        ("mogc_partnerships", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='cohortmembership',
-            name='active',
+            model_name="cohortmembership",
+            name="active",
             field=models.BooleanField(default=True),
         ),
     ]

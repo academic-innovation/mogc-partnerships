@@ -1,7 +1,7 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from . import models, enums
+from . import models
 
 
 class UserFactory(DjangoModelFactory):

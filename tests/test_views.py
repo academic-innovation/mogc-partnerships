@@ -3,7 +3,7 @@ import json
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from mogc_partnerships import factories, views, enums
+from mogc_partnerships import enums, factories, views
 from mogc_partnerships.models import PartnerCohort
 
 
@@ -566,19 +566,32 @@ class TestCohortMembershipUpdateView:
         self._setup(with_enrollments=True)
 
         response = self._make_request(api_rf, payload={"active": False})
+        assert (
+            self.cohort.memberships.first().status
+            == enums.CohortMembershipStatus.DEACTIVATED.value
+        )
         assert response.status_code == 200
-        print(self.enrollment_records);
-        assert all([e.is_active == False for e in self.enrollment_records])
+        assert self.user.enrollment_records.first().is_active is False
 
     def test_course_enrollments_if_multiple_cohorts(self, api_rf):
         """
-        Confirms enrollments are not affected if a user is a member of multiple cohorts with the same cohort offering.
+        Confirms enrollments are not affected if a user is a member of multiple
+        cohorts with the same cohort offering.
         """
         self._setup(with_enrollments=True)
 
-        # Create new cohort
-        self.cohort = factories.PartnerCohortFactory(partner=self.manager.partner)
-        ...
+        # Create new cohort with existing offering in another cohort
+        other_cohort = factories.PartnerCohortFactory(partner=self.manager.partner)
+        factories.CohortMembershipFactory(cohort=other_cohort, user=self.user)
+        factories.CohortOfferingFactory(cohort=other_cohort, offering=self.offering)
+
+        response = self._make_request(api_rf, payload={"active": False})
+        assert (
+            self.cohort.memberships.first().status
+            == enums.CohortMembershipStatus.DEACTIVATED.value
+        )
+        assert response.status_code == 200
+        assert self.user.enrollment_records.first().is_active is True
 
 
 @pytest.mark.django_db

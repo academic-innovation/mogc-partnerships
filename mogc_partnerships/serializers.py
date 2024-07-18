@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from . import models, enums
+from . import models
 
 
 class PartnerOfferingSerializer(serializers.ModelSerializer):
@@ -132,7 +132,16 @@ class CohortMembershipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CohortMembership
-        fields = ["id", "cohort", "partner", "email", "user", "name", "active", "status"]
+        fields = [
+            "id",
+            "cohort",
+            "partner",
+            "email",
+            "user",
+            "name",
+            "active",
+            "status",
+        ]
         list_serializer_class = CohortMembershipListSerializer
 
     def create(self, validated_data):
@@ -157,4 +166,4 @@ class EnrollmentRecordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.EnrollmentRecord
-        fields = ["id", "user", "offering", "is_complete"]
+        fields = ["id", "user", "offering", "is_complete", "is_active"]

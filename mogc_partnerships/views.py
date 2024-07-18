@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 
 from mogc_partnerships import serializers
 
-from . import compat, enums
+from . import compat
 from .models import (
     CohortMembership,
     CohortOffering,
@@ -209,8 +209,9 @@ class CohortMembershipUpdateView(generics.UpdateAPIView):
     def unenroll(self, cohort_member):
         """
         The same course can be offered via multiple cohorts within the same partner.
-        We want to check if a user is enrolled in an offering, and unenroll iff the offering is not available in
-        another cohort that the user is also in.
+
+        Check if a user is enrolled in an offering, and unenroll iff the enrollment
+        is not for an offering available in another cohort the user is also in.
         """
         enrollment_records = (
             EnrollmentRecord.objects.select_related("partner")
@@ -220,32 +221,46 @@ class CohortMembershipUpdateView(generics.UpdateAPIView):
         if not enrollment_records:
             return
 
+        user_cohorts = (
+            CohortMembership.objects.filter(user=cohort_member.user)
+            .filter(cohort__partner=cohort_member.cohort.partner)
+            .values_list("cohort", flat=True)
+        )
+
+        # ID list of partner offerings in cohort member's cohort
         cohort_offerings = CohortOffering.objects.filter(
             cohort=cohort_member.cohort
         ).values_list("offering", flat=True)
-        partner_offerings = PartnerOffering.objects.exclude(
-            pk__in=cohort_offerings
-        ).values_list("pk", flat=True)
+
+        # ID list of partner offerings in other cohorts user is in
+        partner_offerings = (
+            CohortOffering.objects.select_related("offerings")
+            .exclude(cohort=cohort_member.cohort)
+            .filter(
+                offering__partner=cohort_member.cohort.partner, cohort__in=user_cohorts
+            )
+            .values_list("offering__pk", flat=True)
+        )
 
         for e in enrollment_records:
+            # Skip if enrollment is for a partner offering is available in other cohorts
             if e.offering.id in partner_offerings and e.is_active:
                 continue
+
+            # Skip if orphaned offering - this shouldn't happen
             if e.offering.id not in cohort_offerings:
-                # This shouldn't happen
                 continue
+
             e.is_active = False
             e.save()
-        print(enrollment_records)
 
     def perform_update(self, serializer):
-        updated_member = super().perform_update(serializer)
-
         cohort_member = self.get_object()
         user = cohort_member.user
         if user:
             self.unenroll(cohort_member)
 
-        return updated_member
+        return super().perform_update(serializer)
 
 
 class EnrollmentRecordListView(generics.ListAPIView):
