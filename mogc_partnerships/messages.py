@@ -6,11 +6,7 @@ class CohortMembershipInviteMessage(MessageType):
     NAME = "cohort_invite"
 
 
-cohort_membership_invite_message_type = CohortMembershipInviteMessage(
-    context={
-        "body": "Welcome to the cohort!"
-    }
-)
+cohort_membership_invite_message_type = CohortMembershipInviteMessage()
 
 
 def send_message(msg):
@@ -20,16 +16,31 @@ def send_message(msg):
     ace.send(msg)
 
 
-def send_cohort_membership_invite(user):
+def send_cohort_membership_invite(member):
     """
         Triggers an invitation email to new users in a cohort.
     """
-    user_context = {"user": "Some additional content based on this user"}
-    recipient = Recipient(lms_user_id=user.id, email_address=user.email)
+    cohort = member.cohort
+    user = member.user
+    context = {
+        "user": {
+            user.name or ""
+        },
+        "cohort": {
+            "name": cohort.name,
+            "uuid": cohort.uuid,
+        },
+        "partner": {
+            "name": cohort.partner.name,
+            "slug": cohort.partner.slug,
+            "org": cohort.partner.org
+        }
+    }
+    recipient = Recipient(lms_user_id=member.id, email_address=member.email)
     msg = cohort_membership_invite_message_type.personalize(
         recipient=recipient,
         language="en",
-        user_context=user_context
+        context=context
     )
 
     send_message(msg)
