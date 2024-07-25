@@ -2,7 +2,8 @@ black
 celery
 django<4.0
 djangorestframework==3.13.1
-edx-django-utils==4.6.0
+edx-ace==1.9.1
+edx-django-utils==5.14.2
 edx-drf-extensions
 edx-opaque-keys==2.3.0
 factory-boy==3.2.1
@@ -13,4 +14,5 @@ nox
 openedx-events==0.8.1
 openedx-filters==0.7.0
 pytest
+pytest-mock
 pytest-django

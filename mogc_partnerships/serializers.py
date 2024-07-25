@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from . import models
-from .messages import send_cohort_membership_invite, send_cohort_membership_invites
+from . import models, tasks
+from .messages import send_cohort_membership_invite
 
 
 class PartnerOfferingSerializer(serializers.ModelSerializer):
@@ -121,7 +121,7 @@ class CohortMembershipListSerializer(serializers.ListSerializer):
             email__in=[cm.email for cm in objects], cohort=cohort
         )
 
-        send_cohort_membership_invites(cohort_memberships)
+        tasks.send_cohort_membership_invites(cohort_memberships)
 
         return cohort_memberships
 

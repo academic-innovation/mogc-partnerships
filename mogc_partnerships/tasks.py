@@ -5,6 +5,7 @@ from opaque_keys.edx.keys import CourseKey
 
 from .compat import get_course_overview_or_none
 from .models import Partner, PartnerOffering
+from .messages import send_cohort_membership_invite
 
 logger = logging.getLogger(__name__)
 
@@ -26,3 +27,9 @@ def update_or_create_offering(course_id):
             )
     except Partner.DoesNotExist:
         logger.debug(f"Offering not created for {course_key}")
+
+
+@shared_task
+def send_cohort_membership_invites(cohort_memberships):
+    for member in cohort_memberships:
+        send_cohort_membership_invite(member)

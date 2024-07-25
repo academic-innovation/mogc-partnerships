@@ -454,8 +454,9 @@ class TestCohortMembershipListView:
 class TestCohortMembershipCreateView:
     """Tests for CohortMembershipCreateView."""
 
-    def test_manager_can_create_membership(self, api_rf):
+    def test_manager_can_create_membership(self, api_rf, mocker):
         """Managers can create membership for cohorts they manage."""
+        mocker.patch("edx_ace.ace.send")
 
         manager = factories.PartnerManagementMembershipFactory()
         cohort = factories.PartnerCohortFactory(partner=manager.partner)
@@ -482,8 +483,9 @@ class TestCohortMembershipCreateView:
         assert response.status_code == 403
         assert not cohort.memberships.exists()
 
-    def test_bulk_create(self, api_rf):
+    def test_bulk_create(self, api_rf, mocker):
         """Managers can upload a list of emails to bulk create memberships"""
+        mocker.patch("edx_ace.ace.send")
 
         manager = factories.PartnerManagementMembershipFactory()
         cohort = factories.PartnerCohortFactory(partner=manager.partner)
