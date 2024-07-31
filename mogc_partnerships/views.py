@@ -251,6 +251,15 @@ class CohortMembershipUpdateView(generics.UpdateAPIView):
 
         eligible_enrollment_records.update(is_active=False)
 
+        unenrollment_results = []
+        for er in eligible_enrollment_records:
+            result = compat.update_student_enrollment(
+                er.offering.course_key,
+                cohort_member.email,
+                action=compat.UNENROLL_ACTION,
+            )
+            unenrollment_results.append(result)
+
     def perform_update(self, serializer):
         cohort_member = self.get_object()
         user = cohort_member.user
@@ -289,5 +298,7 @@ def enroll_member(request, offering_id):
     user_has_access = user.memberships.filter(cohort=offering.cohort).exists()
     if not user_has_access:
         raise PermissionDenied("Permission denied.")
-    enrollment_data = compat.enroll_student(offering.offering.course_key, user.email)
+    enrollment_data = compat.update_student_enrollment(
+        offering.offering.course_key, user.email, action=compat.ENROLL_ACTION
+    )
     return Response(enrollment_data)

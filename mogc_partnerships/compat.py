@@ -1,3 +1,15 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+ENROLL_ACTION = "enroll"
+UNENROLL_ACTION = "unenroll"
+
+
+class InvalidEnrollmentAction(Exception):
+    pass
+
+
 def make_course_url(course_key):
     try:
         from openedx.features.course_experience.url_helpers import (  # type: ignore
@@ -9,24 +21,30 @@ def make_course_url(course_key):
         return "/"
 
 
-def enroll_student(course_key, student_email):
+def update_student_enrollment(course_key, student_email, action):
+    result = {
+        "course_id": str(course_key),
+        "course_home_url": make_course_url(course_key),
+    }
+
     try:
         from lms.djangoapps.instructor import enrollment  # type: ignore
 
-        previous_state, after_state, enrollment_obj = enrollment.enroll_email(
-            course_key, student_email, auto_enroll=True
-        )
-        return {
-            "course_id": str(course_key),
-            "enrolled": after_state.enrollment,
-            "course_home_url": make_course_url(course_key),
-        }
-    except ImportError:
-        return {
-            "course_id": str(course_key),
-            "enrolled": False,
-            "course_home_url": make_course_url(course_key),
-        }
+        if action == ENROLL_ACTION:
+            previous_state, after_state, enrollment_obj = enrollment.enroll_email(
+                course_key, student_email, auto_enroll=True
+            )
+        elif action == UNENROLL_ACTION:
+            previous_state, after_state, enrollment_obj = enrollment.unenroll_email(
+                course_key, student_email
+            )
+        else:
+            raise InvalidEnrollmentAction(f"{action} is not a valid enrollment option")
+
+        return result.update({"enrolled": after_state.enrollment})
+    except (ImportError, InvalidEnrollmentAction) as e:
+        logger.error(e)
+        return result.update({"enrolled": False})
 
 
 def get_course_overview_or_none(course_id):

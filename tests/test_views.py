@@ -508,14 +508,14 @@ class TestCohortMembershipUpdateView:
     """Tests for CohortMembershipUpdateView."""
 
     def _setup_enrollments(self):
-        self.offering = factories.PartnerOfferingFactory(partner=self.partner)
+        self.partner_offering = factories.PartnerOfferingFactory(partner=self.partner)
         self.cohort_offering = factories.CohortOfferingFactory(
-            cohort=self.cohort, offering=self.offering
+            cohort=self.cohort, offering=self.partner_offering
         )
         self.enrollment_records = [
             factories.EnrollmentRecordFactory(
                 user=self.user,
-                offering=self.offering,
+                offering=self.partner_offering,
                 is_active=True,
             )
         ]
@@ -558,11 +558,20 @@ class TestCohortMembershipUpdateView:
             == enums.CohortMembershipStatus.DEACTIVATED.value
         )
 
-    def test_course_enrollments_deactivated_on_status_change(self, api_rf):
+    def test_course_enrollments_deactivated_on_status_change(self, api_rf, mocker):
         """
         Confirms enrollment is marked inactive when a user is deactivated.
         """
         self._setup(with_enrollments=True)
+
+        mocker.patch(
+            "mogc_partnerships.compat.update_student_enrollment",
+            return_value={
+                "course_id": self.partner_offering.course_key,
+                "course_home_url": "foo.com/bar",
+                "enrolled": False,
+            },
+        )
 
         response = self._make_request(api_rf, payload={"active": False})
         self.enrollment_records[0].refresh_from_db()
@@ -583,7 +592,9 @@ class TestCohortMembershipUpdateView:
         # Create new cohort with existing offering in another cohort
         other_cohort = factories.PartnerCohortFactory(partner=self.manager.partner)
         factories.CohortMembershipFactory(cohort=other_cohort, user=self.user)
-        factories.CohortOfferingFactory(cohort=other_cohort, offering=self.offering)
+        factories.CohortOfferingFactory(
+            cohort=other_cohort, offering=self.partner_offering
+        )
 
         response = self._make_request(api_rf, payload={"active": False})
         self.enrollment_records[0].refresh_from_db()
