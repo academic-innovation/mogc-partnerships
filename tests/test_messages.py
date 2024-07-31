@@ -25,7 +25,10 @@ class TestMessages:
         )
 
     def test_send_cohort_membership_invite_existing_user(self, mocker):
-        """Cohort Invite email should send to existing users and include user details in context"""
+        """
+        Cohort Invite email should send to existing users and
+        include user details in context
+        """
         self._setup(with_user=True)
 
         mocker.patch("edx_ace.ace.send")

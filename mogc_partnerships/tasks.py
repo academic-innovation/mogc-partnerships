@@ -4,8 +4,8 @@ from celery import shared_task
 from opaque_keys.edx.keys import CourseKey
 
 from .compat import get_course_overview_or_none
-from .models import Partner, PartnerOffering
 from .messages import send_cohort_membership_invite
+from .models import Partner, PartnerOffering
 
 logger = logging.getLogger(__name__)
 

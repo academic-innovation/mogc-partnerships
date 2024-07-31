@@ -17,26 +17,28 @@ cohort_membership_invite = CohortMembershipInviteMessage()
 
 def send_message(notification_type, member, context):
     """
-        Triggers a prepared custom message via edX ACE.
+    Sends an email of notification_type to member with custom user context. User
+    context data is combined with a default context object which can be set on the
+    MessageType.
     """
-    success = True
     try:
         recipient = Recipient(lms_user_id=member.id, email_address=member.email)
         msg = notification_type.personalize(
-            recipient=recipient,
-            language="en",
-            user_context=context
+            recipient=recipient, language="en", user_context=context
         )
         ace.send(msg)
-    except:
-        success = False
-        logger.error("Error sending {} notification to member {} - {}".format(notification_type, member.id, member.email))
+    except Exception as e:
+        logger.error(
+            "Error sending {} notification to member {} - {}".format(
+                notification_type, member.id, member.email
+            )
+        )
+        raise (e)
 
-    return success
 
 def send_cohort_membership_invite(member):
     """
-        Triggers an invitation email to new users in a cohort.
+    Triggers an invitation email to new users in a cohort.
     """
     cohort = member.cohort
     user = member.user
