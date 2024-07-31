@@ -1,4 +1,4 @@
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
 
 from rest_framework import generics
@@ -213,46 +213,43 @@ class CohortMembershipUpdateView(generics.UpdateAPIView):
         Check if a user is enrolled in an offering, and unenroll iff the enrollment
         is not for an offering available in another cohort the user is also in.
         """
-        enrollment_records = (
-            EnrollmentRecord.objects.select_related("partner")
-            .select_related("offering")
-            .filter(user=cohort_member.user, is_active=True)
-        )
-        if not enrollment_records:
+        user_enrollment_records = EnrollmentRecord.objects.select_related(
+            "offering__partner"
+        ).filter(user=cohort_member.user, is_active=True)
+        if not user_enrollment_records:
             return
 
-        user_cohorts = (
+        user_cohort_ids = (
             CohortMembership.objects.filter(user=cohort_member.user)
             .filter(cohort__partner=cohort_member.cohort.partner)
             .values_list("cohort", flat=True)
         )
 
         # ID list of partner offerings in cohort member's cohort
-        cohort_offerings = CohortOffering.objects.filter(
+        cohort_offering_ids = CohortOffering.objects.filter(
             cohort=cohort_member.cohort
         ).values_list("offering", flat=True)
 
         # ID list of partner offerings in other cohorts user is in
-        partner_offerings = (
+        partner_offering_ids = (
             CohortOffering.objects.select_related("offerings")
             .exclude(cohort=cohort_member.cohort)
             .filter(
-                offering__partner=cohort_member.cohort.partner, cohort__in=user_cohorts
+                offering__partner=cohort_member.cohort.partner,
+                cohort__in=user_cohort_ids,
             )
             .values_list("offering__pk", flat=True)
         )
 
-        for e in enrollment_records:
-            # Skip if enrollment is for a partner offering is available in other cohorts
-            if e.offering.id in partner_offerings and e.is_active:
-                continue
+        # Filter down to enrollments eligible for unenrollment
+        eligible_enrollment_records = user_enrollment_records.exclude(
+            Q(offering__id__in=partner_offering_ids) & Q(is_active=True),
+            Q(offering__id__in=cohort_offering_ids),
+        )
+        if not eligible_enrollment_records:
+            return
 
-            # Skip if orphaned offering - this shouldn't happen
-            if e.offering.id not in cohort_offerings:
-                continue
-
-            e.is_active = False
-            e.save()
+        eligible_enrollment_records.update(is_active=False)
 
     def perform_update(self, serializer):
         cohort_member = self.get_object()

@@ -515,7 +515,6 @@ class TestCohortMembershipUpdateView:
         self.enrollment_records = [
             factories.EnrollmentRecordFactory(
                 user=self.user,
-                partner=self.partner,
                 offering=self.offering,
                 is_active=True,
             )
@@ -566,12 +565,13 @@ class TestCohortMembershipUpdateView:
         self._setup(with_enrollments=True)
 
         response = self._make_request(api_rf, payload={"active": False})
+        self.enrollment_records[0].refresh_from_db()
         assert (
             self.cohort.memberships.first().status
             == enums.CohortMembershipStatus.DEACTIVATED.value
         )
         assert response.status_code == 200
-        assert self.user.enrollment_records.first().is_active is False
+        assert self.enrollment_records[0].is_active is False
 
     def test_course_enrollments_if_multiple_cohorts(self, api_rf):
         """
@@ -586,12 +586,13 @@ class TestCohortMembershipUpdateView:
         factories.CohortOfferingFactory(cohort=other_cohort, offering=self.offering)
 
         response = self._make_request(api_rf, payload={"active": False})
+        self.enrollment_records[0].refresh_from_db()
         assert (
             self.cohort.memberships.first().status
             == enums.CohortMembershipStatus.DEACTIVATED.value
         )
         assert response.status_code == 200
-        assert self.user.enrollment_records.first().is_active is True
+        assert self.enrollment_records[0].is_active is True
 
 
 @pytest.mark.django_db
