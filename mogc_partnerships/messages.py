@@ -1,44 +1,42 @@
-from enum import Enum
+import logging
+
 from edx_ace import ace
-from edx_ace.message import Message
+from edx_ace.message import MessageType
 from edx_ace.recipient import Recipient
 
-
-class InvalidNotificationType(Exception):
-    pass
+logger = logging.getLogger(__name__)
 
 
-class NotificationType(Enum):
-    COHORT_INVITE = 1
+class CohortMembershipInviteMessage(MessageType):
+    APP_LABEL = "partner_emails"
+    NAME = "cohort_invite"
 
 
-notification_type_map = {NotificationType.COHORT_INVITE: "cohort_invite"}
+cohort_membership_invite = CohortMembershipInviteMessage()
 
 
-def send_message(notification_type, member, context=None):
+def send_message(notification_type, member, context):
     """
-    Triggers a prepared custom message via edX ACE.
+        Triggers a prepared custom message via edX ACE.
     """
+    success = True
     try:
-        notification_name = notification_type_map[notification_type]
-    except KeyError:
-        raise InvalidNotificationType(
-            "{} is not a valid notification type".format(notification_type)
+        recipient = Recipient(lms_user_id=member.id, email_address=member.email)
+        msg = notification_type.personalize(
+            recipient=recipient,
+            language="en",
+            user_context=context
         )
+        ace.send(msg)
+    except:
+        success = False
+        logger.error("Error sending {} notification to member {} - {}".format(notification_type, member.id, member.email))
 
-    msg = Message(
-        name=notification_name,
-        app_label="partner_emails",
-        recipient=Recipient(lms_user_id=member.id, email_address=member.email),
-        language="en",
-        context=context or {},
-    )
-    ace.send(msg)
-
+    return success
 
 def send_cohort_membership_invite(member):
     """
-    Triggers an invitation email to new users in a cohort.
+        Triggers an invitation email to new users in a cohort.
     """
     cohort = member.cohort
     user = member.user
@@ -53,5 +51,7 @@ def send_cohort_membership_invite(member):
             "slug": cohort.partner.slug,
             "org": cohort.partner.org,
         },
+        "base_url": "",
     }
-    send_message(NotificationType.COHORT_INVITE, member=member, context=context)
+
+    send_message(cohort_membership_invite, member, context)

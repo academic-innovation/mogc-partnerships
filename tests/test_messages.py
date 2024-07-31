@@ -21,7 +21,7 @@ class TestMessages:
 
         mocker.patch("edx_ace.ace.send")
         messages.send_message(
-            messages.NotificationType.COHORT_INVITE, self.member, context={"foo": "bar"}
+            messages.cohort_membership_invite, self.member, context={"foo": "bar"}
         )
 
     def test_send_cohort_membership_invite_existing_user(self, mocker):
