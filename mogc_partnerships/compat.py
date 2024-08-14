@@ -41,10 +41,12 @@ def update_student_enrollment(course_key, student_email, action):
         else:
             raise InvalidEnrollmentAction(f"{action} is not a valid enrollment option")
 
-        return result.update({"enrolled": after_state.enrollment})
+        result.update({"enrolled": after_state.enrollment})
     except (ImportError, InvalidEnrollmentAction) as e:
         logger.error(e)
-        return result.update({"enrolled": False})
+        result.update({"enrolled": False})
+
+    return result
 
 
 def get_course_overview_or_none(course_id):
