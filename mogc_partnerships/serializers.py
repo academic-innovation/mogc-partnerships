@@ -99,7 +99,7 @@ class CohortMembershipListSerializer(serializers.ListSerializer):
         User = get_user_model()
         membership_accounts = User.objects.filter(
             email__in=[email for email in member_emails]
-        ).values_list()
+        )
         account_email_map = {user.email: user for user in membership_accounts}
 
         cohort_memberships = [

@@ -502,6 +502,27 @@ class TestCohortMembershipCreateView:
         assert response.status_code == 201
         assert len(response.data) == 100
 
+    def test_bulk_create_with_existing_user(self, api_rf):
+        """Managers can upload a list of emails to bulk create memberships"""
+
+        manager = factories.PartnerManagementMembershipFactory()
+        factories.UserFactory(email="foo@bar.com")
+        cohort = factories.PartnerCohortFactory(partner=manager.partner)
+        member_create_view = views.CohortMembershipCreateView.as_view()
+        user_data = [{"email": "foo@bar.com"}]
+
+        request = api_rf.post(
+            f"/memberships/{cohort.uuid}/",
+            json.dumps(user_data),
+            content_type="application/json",
+        )
+        force_authenticate(request, manager.user)
+
+        response = member_create_view(request, cohort_uuid=cohort.uuid)
+
+        assert response.status_code == 201
+        assert len(response.data) == 1
+
 
 @pytest.mark.django_db
 class TestEnrollmentRecordListView:
