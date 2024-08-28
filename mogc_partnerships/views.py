@@ -9,7 +9,7 @@ from rest_framework.decorators import (
     permission_classes,
 )
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -26,6 +26,53 @@ from .models import (
     PartnerOffering,
 )
 from .pagination import LargeResultsSetPagination
+
+
+class ManagerCreatePermission(BasePermission):
+
+    managed_methods = ("POST")
+
+    def has_permission(self, request, view):
+        if not request.method in self.managed_methods:
+            return True
+
+        user = request.user
+        serializer = view.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return False
+
+        partner = serializer.validated_data["partner"]
+        if user in partner.managers.all():
+            return True
+        
+        return False
+
+class ManagerEditPermission(BasePermission):
+
+    managed_methods = ("PUT", "PATCH")
+
+    def has_permission(self, request, view):
+        if not request.method in self.managed_methods:
+            return True
+
+        user = request.user
+        cohort = get_cohort(request.user, view.kwargs.get("cohort_uuid"))
+        partner = cohort.partner
+        if user in partner.managers.all():
+            return True
+        
+        return False
+
+
+def get_cohort(user, cohort_uuid):
+    try:
+        managed_cohorts = PartnerCohort.objects.filter(
+            partner__in=user.partners.values_list("id", flat=True)
+        )
+        cohort = managed_cohorts.get(uuid=cohort_uuid)
+        return cohort
+    except PartnerCohort.DoesNotExist:
+        raise PermissionDenied("Partner cohort does not exist")
 
 
 class PartnerListView(APIView):
@@ -60,7 +107,7 @@ class CohortListView(generics.ListCreateAPIView):
     """List and create cohorts."""
 
     authentication_classes = [SessionAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ManagerCreatePermission]
     serializer_class = serializers.PartnerCohortSerializer
     pagination_class = None
 
@@ -72,11 +119,6 @@ class CohortListView(generics.ListCreateAPIView):
         )
 
     def perform_create(self, serializer):
-        partner = serializer.validated_data["partner"]
-        if self.request.user not in partner.managers.all():
-            self.permission_denied(
-                self.request, f"Cannot create cohort for {partner.slug}"
-            )
         return super().perform_create(serializer)
 
 
@@ -128,19 +170,11 @@ class CohortOfferingCreateView(generics.CreateAPIView):
     """Adds offerings to cohorts."""
 
     authentication_classes = [SessionAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ManagerEditPermission]
     serializer_class = serializers.CohortOfferingSerializer
 
     def perform_create(self, serializer):
-        user = self.request.user
-        managed_cohorts = PartnerCohort.objects.filter(
-            partner__in=user.partners.values_list("id", flat=True)
-        )
-        cohort_uuid = self.kwargs.get("cohort_uuid")
-        try:
-            cohort = managed_cohorts.get(uuid=cohort_uuid)
-        except PartnerCohort.DoesNotExist:
-            raise PermissionDenied("No")
+        cohort = get_cohort(self.request.user, self.kwargs.get("cohort_uuid"))
         offering = serializer.validated_data["offering"]
         if offering not in cohort.partner.offerings.all():
             raise PermissionDenied("No!")
@@ -168,7 +202,7 @@ class CohortMembershipListView(generics.ListAPIView):
 
 class CohortMembershipCreateView(generics.CreateAPIView):
     authentication_classes = [SessionAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ManagerEditPermission]
     serializer_class = serializers.CohortMembershipSerializer
 
     def get_serializer(self, *args, **kwargs):
@@ -178,23 +212,14 @@ class CohortMembershipCreateView(generics.CreateAPIView):
         return super(CohortMembershipCreateView, self).get_serializer(*args, **kwargs)
 
     def get_serializer_context(self):
-        try:
-            user = self.request.user
-            managed_partners = Partner.objects.active().for_user(user)
-            managed_cohorts = PartnerCohort.objects.filter(
-                partner__in=managed_partners.values_list("id", flat=True)
-            )
-            cohort_uuid = self.kwargs.get("cohort_uuid")
-            cohort = managed_cohorts.get(uuid=cohort_uuid)
-        except PartnerCohort.DoesNotExist:
-            raise PermissionDenied("No")
+        cohort = get_cohort(self.request.user, self.kwargs.get("cohort_uuid"))
 
         return {"cohort": cohort}
 
 
 class CohortMembershipUpdateView(generics.UpdateAPIView):
     authentication_classes = [SessionAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ManagerEditPermission]
     serializer_class = serializers.CohortMembershipSerializer
 
     def get_queryset(self):
