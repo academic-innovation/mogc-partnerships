@@ -2,12 +2,12 @@ from rest_framework.permissions import BasePermission
 
 from .lib import get_cohort
 
-class ManagerCreatePermission(BasePermission):
 
-    managed_methods = ("POST")
+class ManagerCreatePermission(BasePermission):
+    managed_methods = "POST"
 
     def has_permission(self, request, view):
-        if not request.method in self.managed_methods:
+        if request.method not in self.managed_methods:
             return True
 
         user = request.user
@@ -18,15 +18,15 @@ class ManagerCreatePermission(BasePermission):
         partner = serializer.validated_data["partner"]
         if user in partner.managers.all():
             return True
-        
+
         return False
 
-class ManagerEditPermission(BasePermission):
 
+class ManagerEditPermission(BasePermission):
     managed_methods = ("PUT", "PATCH")
 
     def has_permission(self, request, view):
-        if not request.method in self.managed_methods:
+        if request.method not in self.managed_methods:
             return True
 
         user = request.user
@@ -34,5 +34,5 @@ class ManagerEditPermission(BasePermission):
         partner = cohort.partner
         if user in partner.managers.all():
             return True
-        
+
         return False

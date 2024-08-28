@@ -2,6 +2,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from .models import PartnerCohort
 
+
 def get_cohort(user, cohort_uuid):
     try:
         managed_cohorts = PartnerCohort.objects.filter(
@@ -11,4 +12,3 @@ def get_cohort(user, cohort_uuid):
         return cohort
     except PartnerCohort.DoesNotExist:
         raise PermissionDenied("Partner cohort does not exist")
-
