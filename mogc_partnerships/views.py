@@ -9,13 +9,14 @@ from rest_framework.decorators import (
     permission_classes,
 )
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from mogc_partnerships import serializers
 
 from . import compat
+from .lib import get_cohort
 from .models import (
     CohortMembership,
     CohortOffering,
@@ -26,53 +27,7 @@ from .models import (
     PartnerOffering,
 )
 from .pagination import LargeResultsSetPagination
-
-
-class ManagerCreatePermission(BasePermission):
-
-    managed_methods = ("POST")
-
-    def has_permission(self, request, view):
-        if not request.method in self.managed_methods:
-            return True
-
-        user = request.user
-        serializer = view.get_serializer(data=request.data)
-        if not serializer.is_valid():
-            return False
-
-        partner = serializer.validated_data["partner"]
-        if user in partner.managers.all():
-            return True
-        
-        return False
-
-class ManagerEditPermission(BasePermission):
-
-    managed_methods = ("PUT", "PATCH")
-
-    def has_permission(self, request, view):
-        if not request.method in self.managed_methods:
-            return True
-
-        user = request.user
-        cohort = get_cohort(request.user, view.kwargs.get("cohort_uuid"))
-        partner = cohort.partner
-        if user in partner.managers.all():
-            return True
-        
-        return False
-
-
-def get_cohort(user, cohort_uuid):
-    try:
-        managed_cohorts = PartnerCohort.objects.filter(
-            partner__in=user.partners.values_list("id", flat=True)
-        )
-        cohort = managed_cohorts.get(uuid=cohort_uuid)
-        return cohort
-    except PartnerCohort.DoesNotExist:
-        raise PermissionDenied("Partner cohort does not exist")
+from .permissions import ManagerCreatePermission, ManagerEditPermission
 
 
 class PartnerListView(APIView):
