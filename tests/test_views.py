@@ -456,7 +456,7 @@ class TestCohortMembershipCreateView:
 
     def test_manager_can_create_membership(self, api_rf, mocker):
         """Managers can create membership for cohorts they manage."""
-        mocker.patch("edx_ace.ace.send")
+        edx_ace_mock = mocker.patch("edx_ace.ace.send")
 
         manager = factories.PartnerManagementMembershipFactory()
         cohort = factories.PartnerCohortFactory(partner=manager.partner)
@@ -468,6 +468,7 @@ class TestCohortMembershipCreateView:
 
         assert response.status_code == 201
         assert cohort.memberships.first().email == "a@b.com"
+        assert edx_ace_mock.call_count == 1
 
     def test_only_own_cohort(self, api_rf):
         """Managers can't create memberships for cohorts they don't manage."""
@@ -485,12 +486,12 @@ class TestCohortMembershipCreateView:
 
     def test_bulk_create(self, api_rf, mocker):
         """Managers can upload a list of emails to bulk create memberships"""
-        mocker.patch("edx_ace.ace.send")
+        edx_ace_mock = mocker.patch("edx_ace.ace.send")
 
         manager = factories.PartnerManagementMembershipFactory()
         cohort = factories.PartnerCohortFactory(partner=manager.partner)
         member_create_view = views.CohortMembershipCreateView.as_view()
-        user_data = [{"email": "test-{}@test.com".format(i)} for i in range(100)]
+        user_data = [{"email": "test-{}@test.com".format(i)} for i in range(10)]
 
         request = api_rf.post(
             f"/memberships/{cohort.uuid}/",
@@ -502,7 +503,8 @@ class TestCohortMembershipCreateView:
         response = member_create_view(request, cohort_uuid=cohort.uuid)
 
         assert response.status_code == 201
-        assert len(response.data) == 100
+        assert len(response.data) == 10
+        assert edx_ace_mock.call_count == 10
 
 
 @pytest.mark.django_db

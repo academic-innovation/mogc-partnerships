@@ -87,7 +87,7 @@ class CohortOfferingSerializer(serializers.ModelSerializer):
         if "enrollments" not in context:
             return False
         return obj.offering_id in context["enrollments"]
-    
+
 
 class CohortMembershipSerializer(serializers.ModelSerializer):
     """Serializer for CohortMembership objects."""

@@ -30,6 +30,11 @@ def update_or_create_offering(course_id):
 
 
 @shared_task
-def send_cohort_membership_invites(cohort_memberships):
+def trigger_send_cohort_membership_invite(cohort_membership):
+    send_cohort_membership_invite(cohort_membership)
+
+
+@shared_task
+def trigger_send_cohort_membership_invites(cohort_memberships):
     for member in cohort_memberships:
         send_cohort_membership_invite(member)

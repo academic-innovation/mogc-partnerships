@@ -193,7 +193,7 @@ class CohortMembershipCreateView(generics.CreateAPIView):
             raise PermissionDenied("No")
 
         return cohort
-    
+
     def create_collection(self, validated_data, cohort):
         member_emails = [o["email"] for o in validated_data]
 
@@ -221,10 +221,10 @@ class CohortMembershipCreateView(generics.CreateAPIView):
             email__in=[cm.email for cm in objects], cohort=cohort
         )
 
-        tasks.send_cohort_membership_invites(cohort_memberships)
+        tasks.trigger_send_cohort_membership_invites(cohort_memberships)
 
         return cohort_memberships
-    
+
     def create_instance(self, validated_data, cohort):
         validated_data["cohort"] = cohort
 
@@ -236,11 +236,10 @@ class CohortMembershipCreateView(generics.CreateAPIView):
 
         cohort_membership = CohortMembership.objects.create(**validated_data)
 
-        send_cohort_membership_invite(cohort_membership)
+        tasks.trigger_send_cohort_membership_invite(cohort_membership)
 
         return cohort_membership
 
-    
     def perform_create(self, serializer):
         cohort = self.get_cohort()
 
