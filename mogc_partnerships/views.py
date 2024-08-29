@@ -16,9 +16,7 @@ from rest_framework.views import APIView
 
 from mogc_partnerships import serializers
 
-from . import compat
-from . import tasks
-from .messages import send_cohort_membership_invite
+from . import compat, tasks
 from .models import (
     CohortMembership,
     CohortOffering,
