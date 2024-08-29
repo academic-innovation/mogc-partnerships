@@ -1,9 +1,6 @@
-from django.contrib.auth import get_user_model
-
 from rest_framework import serializers
 
-from . import models, tasks
-from .messages import send_cohort_membership_invite
+from . import models
 
 
 class PartnerOfferingSerializer(serializers.ModelSerializer):
@@ -90,41 +87,7 @@ class CohortOfferingSerializer(serializers.ModelSerializer):
         if "enrollments" not in context:
             return False
         return obj.offering_id in context["enrollments"]
-
-
-class CohortMembershipListSerializer(serializers.ListSerializer):
-    def create(self, validated_data):
-        cohort = self.context.get("cohort")
-        member_emails = [o["email"] for o in validated_data]
-
-        User = get_user_model()
-        membership_accounts = User.objects.filter(
-            email__in=[email for email in member_emails]
-        ).values_list()
-        account_email_map = {user.email: user for user in membership_accounts}
-
-        cohort_memberships = [
-            models.CohortMembership(
-                user=account_email_map.get(member_email),
-                cohort=cohort,
-                email=member_email,
-            )
-            for member_email in member_emails
-        ]
-
-        objects = models.CohortMembership.objects.bulk_create(
-            cohort_memberships, ignore_conflicts=True
-        )
-        # bulk_create doesn't return autoincremented IDs with MySQL DBs
-        # so we have to query results separately
-        cohort_memberships = models.CohortMembership.objects.filter(
-            email__in=[cm.email for cm in objects], cohort=cohort
-        )
-
-        tasks.send_cohort_membership_invites(cohort_memberships)
-
-        return cohort_memberships
-
+    
 
 class CohortMembershipSerializer(serializers.ModelSerializer):
     """Serializer for CohortMembership objects."""
@@ -138,22 +101,6 @@ class CohortMembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CohortMembership
         fields = ["id", "cohort", "partner", "email", "user", "name"]
-        list_serializer_class = CohortMembershipListSerializer
-
-    def create(self, validated_data):
-        validated_data["cohort"] = self.context.get("cohort")
-
-        User = get_user_model()
-        try:
-            validated_data["user"] = User.objects.get(email=validated_data.get("email"))
-        except User.DoesNotExist:
-            validated_data["user"] = None
-
-        cohort_membership = models.CohortMembership.objects.create(**validated_data)
-
-        send_cohort_membership_invite(cohort_membership)
-
-        return cohort_membership
 
 
 class EnrollmentRecordSerializer(serializers.ModelSerializer):
