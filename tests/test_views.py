@@ -506,8 +506,9 @@ class TestCohortMembershipCreateView:
         assert len(response.data) == 10
         assert edx_ace_mock.call_count == 10
 
-    def test_bulk_create_with_existing_user(self, api_rf):
+    def test_bulk_create_with_existing_user(self, api_rf, mocker):
         """Managers can upload a list of emails to bulk create memberships"""
+        edx_ace_mock = mocker.patch("edx_ace.ace.send")
 
         manager = factories.PartnerManagementMembershipFactory()
         factories.UserFactory(email="foo@bar.com")
@@ -526,6 +527,7 @@ class TestCohortMembershipCreateView:
 
         assert response.status_code == 201
         assert len(response.data) == 1
+        assert edx_ace_mock.call_count == 1
 
 
 @pytest.mark.django_db
