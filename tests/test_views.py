@@ -3,7 +3,7 @@ import json
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from mogc_partnerships import factories, views
+from mogc_partnerships import enums, factories, views
 from mogc_partnerships.models import PartnerCohort
 
 
@@ -528,6 +528,109 @@ class TestCohortMembershipCreateView:
         assert response.status_code == 201
         assert len(response.data) == 1
         assert edx_ace_mock.call_count == 1
+
+
+@pytest.mark.django_db
+class TestCohortMembershipUpdateView:
+    """Tests for CohortMembershipUpdateView."""
+
+    def _setup_enrollments(self):
+        self.partner_offering = factories.PartnerOfferingFactory(partner=self.partner)
+        self.cohort_offering = factories.CohortOfferingFactory(
+            cohort=self.cohort, offering=self.partner_offering
+        )
+        self.enrollment_records = [
+            factories.EnrollmentRecordFactory(
+                user=self.user,
+                offering=self.partner_offering,
+                is_active=True,
+            )
+        ]
+        self.user.enrollment_records.set(self.enrollment_records)
+
+    def _make_request(self, api_rf, payload=None):
+        request = api_rf.patch(
+            f"/memberships/{self.cohort.uuid}/{self.membership.id}/",
+            payload,
+            format="json",
+        )
+        force_authenticate(request, self.manager.user)
+        return self.member_update_view(
+            request, cohort_uuid=self.cohort.uuid, pk=self.membership.id
+        )
+
+    def _setup(self, with_enrollments=False):
+        self.user = factories.UserFactory()
+        self.manager = factories.PartnerManagementMembershipFactory()
+
+        self.partner = self.manager.partner
+        self.cohort = factories.PartnerCohortFactory(partner=self.partner)
+        self.membership = factories.CohortMembershipFactory(
+            cohort=self.cohort, user=self.user
+        )
+
+        if with_enrollments:
+            self._setup_enrollments()
+
+        self.member_update_view = views.CohortMembershipUpdateView.as_view()
+
+    def test_manager_can_update_membership(self, api_rf):
+        """Managers can update membership for cohorts they manage."""
+        self._setup()
+
+        response = self._make_request(api_rf, payload={"active": False})
+        assert response.status_code == 200
+        assert (
+            self.cohort.memberships.first().status
+            == enums.CohortMembershipStatus.DEACTIVATED.value
+        )
+
+    def test_course_enrollments_deactivated_on_status_change(self, api_rf, mocker):
+        """
+        Confirms enrollment is marked inactive when a user is deactivated.
+        """
+        self._setup(with_enrollments=True)
+
+        mocker.patch(
+            "mogc_partnerships.compat.update_student_enrollment",
+            return_value={
+                "course_id": self.partner_offering.course_key,
+                "course_home_url": "foo.com/bar",
+                "enrolled": False,
+            },
+        )
+
+        response = self._make_request(api_rf, payload={"active": False})
+        self.enrollment_records[0].refresh_from_db()
+        assert (
+            self.cohort.memberships.first().status
+            == enums.CohortMembershipStatus.DEACTIVATED.value
+        )
+        assert response.status_code == 200
+        assert self.enrollment_records[0].is_active is False
+
+    def test_course_enrollments_if_multiple_cohorts(self, api_rf):
+        """
+        Confirms enrollments are not affected if a user is a member of multiple
+        cohorts with the same cohort offering.
+        """
+        self._setup(with_enrollments=True)
+
+        # Create new cohort with existing offering in another cohort
+        other_cohort = factories.PartnerCohortFactory(partner=self.manager.partner)
+        factories.CohortMembershipFactory(cohort=other_cohort, user=self.user)
+        factories.CohortOfferingFactory(
+            cohort=other_cohort, offering=self.partner_offering
+        )
+
+        response = self._make_request(api_rf, payload={"active": False})
+        self.enrollment_records[0].refresh_from_db()
+        assert (
+            self.cohort.memberships.first().status
+            == enums.CohortMembershipStatus.DEACTIVATED.value
+        )
+        assert response.status_code == 200
+        assert self.enrollment_records[0].is_active is True
 
 
 @pytest.mark.django_db

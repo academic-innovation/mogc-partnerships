@@ -48,6 +48,11 @@ urlpatterns = [
         name="membership_create",
     ),
     path(
+        f"{API_PREFIX}/memberships/<uuid:cohort_uuid>/<int:pk>/",
+        views.CohortMembershipUpdateView.as_view(),
+        name="membership_update",
+    ),
+    path(
         f"{API_PREFIX}/continue/<int:offering_id>/",  # TODO: Fix this yucky URL
         views.continue_learning,
         name="continue_learning",

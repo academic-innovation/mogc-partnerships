@@ -16,3 +16,4 @@ openedx-filters==0.7.0
 pytest
 pytest-mock
 pytest-django
+pytest-mock

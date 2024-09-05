@@ -112,4 +112,4 @@ class EnrollmentRecordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.EnrollmentRecord
-        fields = ["id", "user", "offering", "is_complete"]
+        fields = ["id", "user", "offering", "is_complete", "is_active"]
