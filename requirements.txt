@@ -14,3 +14,4 @@ openedx-events==0.8.1
 openedx-filters==0.7.0
 pytest
 pytest-django
+pytest-mock

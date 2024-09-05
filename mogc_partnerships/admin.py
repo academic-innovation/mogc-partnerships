@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from . import models
+from . import enums, models
 
 
 class MangerInline(admin.TabularInline):
@@ -48,7 +48,10 @@ class CohortMembershipAdmin(admin.ModelAdmin):
 
     @admin.display(boolean=True)
     def is_activated(self, membership):
-        return membership.activated
+        return (
+            membership.user is not None
+            and membership.status == enums.CohortMembershipStatus.ACTIVATED
+        )
 
 
 @admin.register(models.EnrollmentRecord)

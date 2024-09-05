@@ -86,6 +86,7 @@ class CohortMembershipFactory(DjangoModelFactory):
     cohort = factory.SubFactory(PartnerCohortFactory)
     email = factory.Faker("email")
     user = factory.SubFactory(UserFactory, email=factory.SelfAttribute("..email"))
+    active = True
 
     class Meta:
         model = models.CohortMembership

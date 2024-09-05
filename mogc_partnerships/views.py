@@ -1,4 +1,4 @@
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
 
 from rest_framework import generics
@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 from mogc_partnerships import serializers
 
 from . import compat
+from .lib import get_cohort
 from .models import (
     CohortMembership,
     CohortOffering,
@@ -26,6 +27,7 @@ from .models import (
     PartnerOffering,
 )
 from .pagination import LargeResultsSetPagination
+from .permissions import ManagerCreatePermission, ManagerEditPermission
 
 
 class PartnerListView(APIView):
@@ -60,7 +62,7 @@ class CohortListView(generics.ListCreateAPIView):
     """List and create cohorts."""
 
     authentication_classes = [SessionAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ManagerCreatePermission]
     serializer_class = serializers.PartnerCohortSerializer
     pagination_class = None
 
@@ -72,11 +74,6 @@ class CohortListView(generics.ListCreateAPIView):
         )
 
     def perform_create(self, serializer):
-        partner = serializer.validated_data["partner"]
-        if self.request.user not in partner.managers.all():
-            self.permission_denied(
-                self.request, f"Cannot create cohort for {partner.slug}"
-            )
         return super().perform_create(serializer)
 
 
@@ -128,19 +125,11 @@ class CohortOfferingCreateView(generics.CreateAPIView):
     """Adds offerings to cohorts."""
 
     authentication_classes = [SessionAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ManagerEditPermission]
     serializer_class = serializers.CohortOfferingSerializer
 
     def perform_create(self, serializer):
-        user = self.request.user
-        managed_cohorts = PartnerCohort.objects.filter(
-            partner__in=user.partners.values_list("id", flat=True)
-        )
-        cohort_uuid = self.kwargs.get("cohort_uuid")
-        try:
-            cohort = managed_cohorts.get(uuid=cohort_uuid)
-        except PartnerCohort.DoesNotExist:
-            raise PermissionDenied("No")
+        cohort = get_cohort(self.request.user, self.kwargs.get("cohort_uuid"))
         offering = serializer.validated_data["offering"]
         if offering not in cohort.partner.offerings.all():
             raise PermissionDenied("No!")
@@ -168,7 +157,7 @@ class CohortMembershipListView(generics.ListAPIView):
 
 class CohortMembershipCreateView(generics.CreateAPIView):
     authentication_classes = [SessionAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ManagerEditPermission]
     serializer_class = serializers.CohortMembershipSerializer
 
     def get_serializer(self, *args, **kwargs):
@@ -178,18 +167,86 @@ class CohortMembershipCreateView(generics.CreateAPIView):
         return super(CohortMembershipCreateView, self).get_serializer(*args, **kwargs)
 
     def get_serializer_context(self):
-        try:
-            user = self.request.user
-            managed_partners = Partner.objects.active().for_user(user)
-            managed_cohorts = PartnerCohort.objects.filter(
-                partner__in=managed_partners.values_list("id", flat=True)
-            )
-            cohort_uuid = self.kwargs.get("cohort_uuid")
-            cohort = managed_cohorts.get(uuid=cohort_uuid)
-        except PartnerCohort.DoesNotExist:
-            raise PermissionDenied("No")
+        cohort = get_cohort(self.request.user, self.kwargs.get("cohort_uuid"))
 
         return {"cohort": cohort}
+
+
+class CohortMembershipUpdateView(generics.UpdateAPIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated, ManagerEditPermission]
+    serializer_class = serializers.CohortMembershipSerializer
+
+    def get_queryset(self):
+        return CohortMembership.objects.filter(
+            pk=self.kwargs.get("pk"), cohort__uuid=self.kwargs.get("cohort_uuid")
+        )
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        return get_object_or_404(queryset)
+
+    def unenroll(self, cohort_member):
+        """
+        The same course can be offered via multiple cohorts within the same partner.
+
+        Check if a user is enrolled in an offering, and unenroll iff the enrollment
+        is not for an offering available in another cohort the user is also in.
+        """
+        user_enrollment_records = EnrollmentRecord.objects.select_related(
+            "offering__partner"
+        ).filter(user=cohort_member.user, is_active=True)
+        if not user_enrollment_records:
+            return
+
+        user_cohort_ids = (
+            CohortMembership.objects.filter(user=cohort_member.user)
+            .filter(cohort__partner=cohort_member.cohort.partner)
+            .values_list("cohort", flat=True)
+        )
+
+        # ID list of partner offerings in cohort member's cohort
+        cohort_offering_ids = CohortOffering.objects.filter(
+            cohort=cohort_member.cohort
+        ).values_list("offering", flat=True)
+
+        # ID list of partner offerings in other cohorts user is in
+        partner_offering_ids = (
+            CohortOffering.objects.select_related("offerings")
+            .exclude(cohort=cohort_member.cohort)
+            .filter(
+                offering__partner=cohort_member.cohort.partner,
+                cohort__in=user_cohort_ids,
+            )
+            .values_list("offering__pk", flat=True)
+        )
+
+        # Filter down to enrollments eligible for unenrollment
+        eligible_enrollment_records = user_enrollment_records.exclude(
+            Q(offering__id__in=partner_offering_ids) & Q(is_active=True),
+            Q(offering__id__in=cohort_offering_ids),
+        )
+        if not eligible_enrollment_records:
+            return
+
+        eligible_enrollment_records.update(is_active=False)
+
+        unenrollment_results = []
+        for er in eligible_enrollment_records:
+            result = compat.update_student_enrollment(
+                er.offering.course_key,
+                cohort_member.email,
+                action=compat.UNENROLL_ACTION,
+            )
+            unenrollment_results.append(result)
+
+    def perform_update(self, serializer):
+        cohort_member = self.get_object()
+        user = cohort_member.user
+        if user:
+            self.unenroll(cohort_member)
+
+        return super().perform_update(serializer)
 
 
 class EnrollmentRecordListView(generics.ListAPIView):
@@ -221,5 +278,7 @@ def enroll_member(request, offering_id):
     user_has_access = user.memberships.filter(cohort=offering.cohort).exists()
     if not user_has_access:
         raise PermissionDenied("Permission denied.")
-    enrollment_data = compat.enroll_student(offering.offering.course_key, user.email)
+    enrollment_data = compat.update_student_enrollment(
+        offering.offering.course_key, user.email, action=compat.ENROLL_ACTION
+    )
     return Response(enrollment_data)

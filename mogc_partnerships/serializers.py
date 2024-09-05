@@ -132,7 +132,16 @@ class CohortMembershipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CohortMembership
-        fields = ["id", "cohort", "partner", "email", "user", "name"]
+        fields = [
+            "id",
+            "cohort",
+            "partner",
+            "email",
+            "user",
+            "name",
+            "active",
+            "status",
+        ]
         list_serializer_class = CohortMembershipListSerializer
 
     def create(self, validated_data):
@@ -143,6 +152,7 @@ class CohortMembershipSerializer(serializers.ModelSerializer):
             validated_data["user"] = User.objects.get(email=validated_data.get("email"))
         except User.DoesNotExist:
             validated_data["user"] = None
+            validated_data["active"] = False
 
         return models.CohortMembership.objects.create(**validated_data)
 
@@ -156,4 +166,4 @@ class EnrollmentRecordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.EnrollmentRecord
-        fields = ["id", "user", "offering", "is_complete"]
+        fields = ["id", "user", "offering", "is_complete", "is_active"]
