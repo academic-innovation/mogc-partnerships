@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
 
 from rest_framework import generics
@@ -214,7 +214,7 @@ class CohortMembershipCreateView(generics.CreateAPIView):
         return cohort_membership
 
     def perform_create(self, serializer):
-        cohort = self.get_cohort()
+        cohort = get_cohort(self.request.user, self.kwargs.get("cohort_uuid"))
 
         validated_data = serializer.validated_data
         if isinstance(validated_data, list):
