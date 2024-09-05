@@ -100,7 +100,16 @@ class CohortMembershipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CohortMembership
-        fields = ["id", "cohort", "partner", "email", "user", "name", "active", "status"]
+        fields = [
+            "id",
+            "cohort",
+            "partner",
+            "email",
+            "user",
+            "name",
+            "active",
+            "status",
+        ]
 
 
 class EnrollmentRecordSerializer(serializers.ModelSerializer):
