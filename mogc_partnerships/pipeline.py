@@ -17,7 +17,9 @@ def get_course_key(context):
     return CourseKey.from_string("course-v1:" + "+".join([org, course_id, run]))
 
 
-def user_can_access_course(user, partner, offering):
+def user_can_access_course(user, course_key):
+    partner = Partner.objects.get(org=course_key.org)
+    offering = partner.offerings.get(course_key=course_key)
     if not user or user.is_anonymous:
         raise Http404
     cohort_ids = CohortOffering.objects.filter(offering=offering).values_list(
@@ -35,9 +37,7 @@ class MembershipRequiredEnrollment(PipelineStep):
 
     def run_filter(self, user, course_key, mode):
         try:
-            partner = Partner.objects.get(org=course_key.org)
-            offering = partner.offerings.get(course_key=course_key)
-            if user_can_access_course(user, partner, offering):
+            if user_can_access_course(user, course_key):
                 return {}
             raise CourseEnrollmentStarted.PreventEnrollment(
                 "This course requires a partner membership."
@@ -57,9 +57,7 @@ class HidePartnerCourseAboutPages(PipelineStep):
         user = get_current_user()
         course_key = get_course_key(context)
         try:
-            partner = Partner.objects.get(org=course_key.org)
-            offering = partner.offerings.get(course_key=course_key)
-            if user_can_access_course(user, partner, offering):
+            if user_can_access_course(user, course_key):
                 return {}
             raise Http404
         except PartnerOffering.DoesNotExist:
