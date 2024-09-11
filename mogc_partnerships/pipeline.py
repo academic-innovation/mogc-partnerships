@@ -14,9 +14,8 @@ def get_course_key(context):
     course_id = course_details.course_id
     run = course_details.run
     # TODO: Find a better way to do this.
-    return CourseKey.from_string(
-        "course-v1:" + "+".join([org, course_id, run])
-    )
+    return CourseKey.from_string("course-v1:" + "+".join([org, course_id, run]))
+
 
 def user_can_access_course(user, partner, offering):
     if not user or user.is_anonymous:
