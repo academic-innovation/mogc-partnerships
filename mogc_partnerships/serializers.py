@@ -1,5 +1,3 @@
-from django.contrib.auth import get_user_model
-
 from rest_framework import serializers
 
 from . import models
@@ -91,36 +89,6 @@ class CohortOfferingSerializer(serializers.ModelSerializer):
         return obj.offering_id in context["enrollments"]
 
 
-class CohortMembershipListSerializer(serializers.ListSerializer):
-    def create(self, validated_data):
-        cohort = self.context.get("cohort")
-        member_emails = [o["email"] for o in validated_data]
-
-        User = get_user_model()
-        membership_accounts = User.objects.filter(
-            email__in=[email for email in member_emails]
-        )
-        account_email_map = {user.email: user for user in membership_accounts}
-
-        cohort_memberships = [
-            models.CohortMembership(
-                user=account_email_map.get(member_email),
-                cohort=cohort,
-                email=member_email,
-            )
-            for member_email in member_emails
-        ]
-
-        objects = models.CohortMembership.objects.bulk_create(
-            cohort_memberships, ignore_conflicts=True
-        )
-        # bulk_create doesn't return autoincremented IDs with MySQL DBs
-        # so we have to query results separately
-        return models.CohortMembership.objects.filter(
-            email__in=[cm.email for cm in objects], cohort=cohort
-        )
-
-
 class CohortMembershipSerializer(serializers.ModelSerializer):
     """Serializer for CohortMembership objects."""
 
@@ -142,19 +110,6 @@ class CohortMembershipSerializer(serializers.ModelSerializer):
             "active",
             "status",
         ]
-        list_serializer_class = CohortMembershipListSerializer
-
-    def create(self, validated_data):
-        validated_data["cohort"] = self.context.get("cohort")
-
-        User = get_user_model()
-        try:
-            validated_data["user"] = User.objects.get(email=validated_data.get("email"))
-        except User.DoesNotExist:
-            validated_data["user"] = None
-            validated_data["active"] = False
-
-        return models.CohortMembership.objects.create(**validated_data)
 
 
 class EnrollmentRecordSerializer(serializers.ModelSerializer):

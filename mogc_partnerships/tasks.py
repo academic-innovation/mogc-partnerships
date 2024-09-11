@@ -4,6 +4,7 @@ from celery import shared_task
 from opaque_keys.edx.keys import CourseKey
 
 from .compat import get_course_overview_or_none
+from .messages import send_cohort_membership_invite
 from .models import Partner, PartnerOffering
 
 logger = logging.getLogger(__name__)
@@ -26,3 +27,14 @@ def update_or_create_offering(course_id):
             )
     except Partner.DoesNotExist:
         logger.debug(f"Offering not created for {course_key}")
+
+
+@shared_task
+def trigger_send_cohort_membership_invite(cohort_membership):
+    send_cohort_membership_invite(cohort_membership)
+
+
+@shared_task
+def trigger_send_cohort_membership_invites(cohort_memberships):
+    for member in cohort_memberships:
+        send_cohort_membership_invite(member)

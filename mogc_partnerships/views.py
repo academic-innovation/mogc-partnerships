@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
 
@@ -15,7 +16,7 @@ from rest_framework.views import APIView
 
 from mogc_partnerships import serializers
 
-from . import compat
+from . import compat, tasks
 from .lib import get_cohort
 from .models import (
     CohortMembership,
@@ -166,10 +167,60 @@ class CohortMembershipCreateView(generics.CreateAPIView):
 
         return super(CohortMembershipCreateView, self).get_serializer(*args, **kwargs)
 
-    def get_serializer_context(self):
+    def create_collection(self, validated_data, cohort):
+        member_emails = [o["email"] for o in validated_data]
+
+        User = get_user_model()
+        membership_accounts = User.objects.filter(
+            email__in=[email for email in member_emails]
+        )
+        account_email_map = {user.email: user for user in membership_accounts}
+
+        cohort_memberships = [
+            CohortMembership(
+                user=account_email_map.get(member_email),
+                cohort=cohort,
+                email=member_email,
+            )
+            for member_email in member_emails
+        ]
+
+        objects = CohortMembership.objects.bulk_create(
+            cohort_memberships, ignore_conflicts=True
+        )
+        # bulk_create doesn't return autoincremented IDs with MySQL DBs
+        # so we have to query results separately
+        cohort_memberships = CohortMembership.objects.filter(
+            email__in=[cm.email for cm in objects], cohort=cohort
+        )
+
+        tasks.trigger_send_cohort_membership_invites(cohort_memberships)
+
+        return cohort_memberships
+
+    def create_instance(self, validated_data, cohort):
+        validated_data["cohort"] = cohort
+
+        User = get_user_model()
+        try:
+            validated_data["user"] = User.objects.get(email=validated_data.get("email"))
+        except User.DoesNotExist:
+            validated_data["user"] = None
+
+        cohort_membership = CohortMembership.objects.create(**validated_data)
+
+        tasks.trigger_send_cohort_membership_invite(cohort_membership)
+
+        return cohort_membership
+
+    def perform_create(self, serializer):
         cohort = get_cohort(self.request.user, self.kwargs.get("cohort_uuid"))
 
-        return {"cohort": cohort}
+        validated_data = serializer.validated_data
+        if isinstance(validated_data, list):
+            return self.create_collection(validated_data, cohort)
+
+        return self.create_instance(validated_data, cohort)
 
 
 class CohortMembershipUpdateView(generics.UpdateAPIView):
