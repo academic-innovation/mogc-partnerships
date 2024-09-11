@@ -8,9 +8,20 @@ from openedx_filters.learning.filters import CourseEnrollmentStarted
 from .models import CohortOffering, Partner, PartnerOffering
 
 
+def get_course_key(context):
+    course_details = context["course_details"]
+    org = course_details.org
+    course_id = course_details.course_id
+    run = course_details.run
+    # TODO: Find a better way to do this.
+    return CourseKey.from_string("course-v1:" + "+".join([org, course_id, run]))
+
+
 def user_can_access_course(user, course_key):
     partner = Partner.objects.get(org=course_key.org)
     offering = partner.offerings.get(course_key=course_key)
+    if not user or user.is_anonymous:
+        raise Http404
     cohort_ids = CohortOffering.objects.filter(offering=offering).values_list(
         "cohort_id", flat=True
     )
@@ -44,15 +55,7 @@ class HidePartnerCourseAboutPages(PipelineStep):
 
     def run_filter(self, context, template_name):
         user = get_current_user()
-        if not user or user.is_anonymous:
-            raise Http404
-        course_details = context["course_details"]
-        org = course_details.org
-        course_id = course_details.course_id
-        run = course_details.run
-        course_key = CourseKey.from_string(
-            "course-v1:" + "+".join([org, course_id, run])
-        )  # TODO: Find a better way to do this.
+        course_key = get_course_key(context)
         try:
             if user_can_access_course(user, course_key):
                 return {}

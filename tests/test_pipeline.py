@@ -104,6 +104,16 @@ class TestHidePartnerCourseAboutPages(TestCase):
             result = CourseAboutRenderStarted.run_filter(context, template_name)
         self.assertEqual(result, (context, template_name))
 
+    def test_displays_regular_courses_anon_user(self):
+        user = AnonymousUser()
+        course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
+        course_details = CourseDetails.from_course_key(course_key)
+        context = {"course_details": course_details}
+        template_name = "page_template.html"
+        with impersonate(user):
+            result = CourseAboutRenderStarted.run_filter(context, template_name)
+        self.assertEqual(result, (context, template_name))
+
     def test_hides_partner_courses(self):
         user = UserFactory()
         course_key = CourseKey.from_string("course-v1:GizmonicInstitute+MST3K+S1_E1")
