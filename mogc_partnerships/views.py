@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
 
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import (
     api_view,
@@ -168,7 +168,7 @@ class CohortMembershipCreateView(generics.CreateAPIView):
         return super(CohortMembershipCreateView, self).get_serializer(*args, **kwargs)
 
     def create_collection(self, validated_data, cohort):
-        member_emails = [o["email"] for o in validated_data]
+        member_emails = [od["email"] for od in validated_data]
 
         User = get_user_model()
         membership_accounts = User.objects.filter(
@@ -213,14 +213,24 @@ class CohortMembershipCreateView(generics.CreateAPIView):
 
         return cohort_membership
 
-    def perform_create(self, serializer):
-        cohort = get_cohort(self.request.user, self.kwargs.get("cohort_uuid"))
+    def create(self, request, *args, **kwargs):
+        cohort = get_cohort(request.user, kwargs.get("cohort_uuid"))
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
         validated_data = serializer.validated_data
         if isinstance(validated_data, list):
-            return self.create_collection(validated_data, cohort)
+            memberships = self.create_collection(validated_data, cohort)
+            return Response(
+                self.serializer_class(memberships, many=True).data,
+                status=status.HTTP_201_CREATED,
+            )
 
-        return self.create_instance(validated_data, cohort)
+        membership = self.create_instance(validated_data, cohort)
+        return Response(
+            self.serializer_class(membership).data, status=status.HTTP_201_CREATED
+        )
 
 
 class CohortMembershipUpdateView(generics.UpdateAPIView):
