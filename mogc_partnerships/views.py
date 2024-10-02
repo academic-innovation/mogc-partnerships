@@ -103,7 +103,7 @@ class CohortOfferingListView(generics.ListAPIView):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context["enrollments"] = self.request.user.enrollment_records.values_list(
+        context["enrollments"] = self.request.user.enrollment_records.filter(is_active=True).values_list(
             "offering_id", flat=True
         )
         return context
