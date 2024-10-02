@@ -103,9 +103,9 @@ class CohortOfferingListView(generics.ListAPIView):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context["enrollments"] = self.request.user.enrollment_records.filter(is_active=True).values_list(
-            "offering_id", flat=True
-        )
+        context["enrollments"] = self.request.user.enrollment_records.filter(
+            is_active=True
+        ).values_list("offering_id", flat=True)
         return context
 
     def get_queryset(self):
@@ -290,8 +290,6 @@ class CohortMembershipUpdateView(generics.UpdateAPIView):
         if not eligible_enrollment_records:
             return
 
-        eligible_enrollment_records.update(is_active=False)
-
         unenrollment_results = []
         for er in eligible_enrollment_records:
             result = compat.update_student_enrollment(
@@ -301,10 +299,12 @@ class CohortMembershipUpdateView(generics.UpdateAPIView):
             )
             unenrollment_results.append(result)
 
+        eligible_enrollment_records.update(is_active=False)
+
     def perform_update(self, serializer):
         cohort_member = self.get_object()
         user = cohort_member.user
-        if user:
+        if user and not serializer.validated_data.get("active"):
             self.unenroll(cohort_member)
 
         return super().perform_update(serializer)
