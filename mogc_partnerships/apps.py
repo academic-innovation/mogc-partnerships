@@ -52,6 +52,13 @@ class PartnershipsAppConfig(AppConfig):
                             "COURSE_ENROLLMENT_CREATED"
                         ),
                     },
+                    {
+                        PluginSignals.RECEIVER_FUNC_NAME: "update_enrollment_records",
+                        PluginSignals.SIGNAL_PATH: (
+                            "openedx_events.learning.signals."
+                            "COURSE_UNENROLLMENT_COMPLETED"
+                        ),
+                    },
                 ],
             },
         },
