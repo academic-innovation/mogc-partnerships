@@ -114,7 +114,10 @@ class CohortOfferingListView(generics.ListAPIView):
         managed_offerings = CohortOffering.objects.filter(
             cohort__partner_id__in=managed_partners.values_list("id", flat=True)
         )
-        memberships = user.memberships.all()
+        memberships = user.memberships.filter(active=True).all()
+        if not (managed_offerings or memberships):
+            raise PermissionDenied("User has no active cohort memberships")
+
         member_offerings = CohortOffering.objects.filter(
             cohort__in=memberships.values_list("cohort_id", flat=True)
         )
