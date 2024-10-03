@@ -41,7 +41,16 @@ def send_cohort_membership_invite(member):
     Triggers an invitation email to new users in a cohort.
     """
     cohort = member.cohort
+    partner = cohort.partner
     user = member.user
+
+    base_url = "https://apps.learn.online.umich.edu/partners"
+    next_url = "{}/{}/details".format(base_url, partner.slug)
+    auth_path = "register" if not user else "login"
+    login_url = "https://apps.learn.online.umich.edu/authn/{}/?next={}".format(
+        auth_path, next_url
+    )
+
     context = {
         "user": {"first_name": user.first_name if user else ""},
         "cohort": {
@@ -49,11 +58,11 @@ def send_cohort_membership_invite(member):
             "uuid": cohort.uuid,
         },
         "partner": {
-            "name": cohort.partner.name,
-            "slug": cohort.partner.slug,
-            "org": cohort.partner.org,
+            "name": partner.name,
+            "slug": partner.slug,
+            "org": partner.org,
         },
-        "base_url": "",
+        "login_url": login_url,
     }
 
     send_message(cohort_membership_invite, member, context)
