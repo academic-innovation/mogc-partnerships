@@ -508,7 +508,10 @@ class TestCohortMembershipCreateView:
         assert import_task_mock.call_count == 1
 
     def test_bulk_create_with_existing_user(self, api_rf, mocker):
-        """Managers can upload a list of emails to bulk create memberships for existing user emails"""
+        """
+        Managers can upload a list of emails to bulk create memberships
+        for existing user emails
+        """
         import_task_mock = mocker.patch(
             "mogc_partnerships.tasks.batch_create_memberships"
         )
