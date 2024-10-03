@@ -486,7 +486,9 @@ class TestCohortMembershipCreateView:
 
     def test_bulk_create(self, api_rf, mocker):
         """Managers can upload a list of emails to bulk create memberships"""
-        import_task_mock = mocker.patch("mogc_partnerships.tasks.batch_create_memberships")
+        import_task_mock = mocker.patch(
+            "mogc_partnerships.tasks.batch_create_memberships"
+        )
 
         manager = factories.PartnerManagementMembershipFactory()
         cohort = factories.PartnerCohortFactory(partner=manager.partner)
@@ -507,7 +509,9 @@ class TestCohortMembershipCreateView:
 
     def test_bulk_create_with_existing_user(self, api_rf, mocker):
         """Managers can upload a list of emails to bulk create memberships for existing user emails"""
-        import_task_mock = mocker.patch("mogc_partnerships.tasks.batch_create_memberships")
+        import_task_mock = mocker.patch(
+            "mogc_partnerships.tasks.batch_create_memberships"
+        )
 
         manager = factories.PartnerManagementMembershipFactory()
         factories.UserFactory(email="foo@bar.com")
