@@ -486,7 +486,7 @@ class TestCohortMembershipCreateView:
 
     def test_bulk_create(self, api_rf, mocker):
         """Managers can upload a list of emails to bulk create memberships"""
-        edx_ace_mock = mocker.patch("edx_ace.ace.send")
+        import_task_mock = mocker.patch("mogc_partnerships.tasks.batch_create_memberships")
 
         manager = factories.PartnerManagementMembershipFactory()
         cohort = factories.PartnerCohortFactory(partner=manager.partner)
@@ -503,12 +503,11 @@ class TestCohortMembershipCreateView:
         response = member_create_view(request, cohort_uuid=cohort.uuid)
 
         assert response.status_code == 201
-        assert len(response.data) == 10
-        assert edx_ace_mock.call_count == 10
+        assert import_task_mock.call_count == 1
 
     def test_bulk_create_with_existing_user(self, api_rf, mocker):
-        """Managers can upload a list of emails to bulk create memberships"""
-        edx_ace_mock = mocker.patch("edx_ace.ace.send")
+        """Managers can upload a list of emails to bulk create memberships for existing user emails"""
+        import_task_mock = mocker.patch("mogc_partnerships.tasks.batch_create_memberships")
 
         manager = factories.PartnerManagementMembershipFactory()
         factories.UserFactory(email="foo@bar.com")
@@ -526,8 +525,7 @@ class TestCohortMembershipCreateView:
         response = member_create_view(request, cohort_uuid=cohort.uuid)
 
         assert response.status_code == 201
-        assert len(response.data) == 1
-        assert edx_ace_mock.call_count == 1
+        assert import_task_mock.call_count == 1
 
 
 @pytest.mark.django_db
