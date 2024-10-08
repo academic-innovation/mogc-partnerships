@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect
@@ -17,6 +19,7 @@ from rest_framework.views import APIView
 from mogc_partnerships import serializers
 
 from . import compat, tasks
+from .exceptions import CohortMembershipImportError
 from .lib import get_cohort
 from .models import (
     CohortMembership,
@@ -29,6 +32,8 @@ from .models import (
 )
 from .pagination import LargeResultsSetPagination
 from .permissions import ManagerCreatePermission, ManagerEditPermission
+
+logger = logging.getLogger(__name__)
 
 
 class PartnerListView(APIView):
@@ -175,33 +180,7 @@ class CohortMembershipCreateView(generics.CreateAPIView):
     def create_collection(self, validated_data, cohort):
         member_emails = [od["email"] for od in validated_data]
 
-        User = get_user_model()
-        membership_accounts = User.objects.filter(
-            email__in=[email for email in member_emails]
-        )
-        account_email_map = {user.email: user for user in membership_accounts}
-
-        cohort_memberships = [
-            CohortMembership(
-                user=account_email_map.get(member_email),
-                cohort=cohort,
-                email=member_email,
-            )
-            for member_email in member_emails
-        ]
-
-        objects = CohortMembership.objects.bulk_create(
-            cohort_memberships, ignore_conflicts=True
-        )
-        # bulk_create doesn't return autoincremented IDs with MySQL DBs
-        # so we have to query results separately
-        cohort_memberships = CohortMembership.objects.filter(
-            email__in=[cm.email for cm in objects], cohort=cohort
-        )
-
-        tasks.trigger_send_cohort_membership_invites(cohort_memberships)
-
-        return cohort_memberships
+        tasks.trigger_batch_create_memberships(cohort, member_emails)
 
     def create_instance(self, validated_data, cohort):
         validated_data["cohort"] = cohort
@@ -226,11 +205,12 @@ class CohortMembershipCreateView(generics.CreateAPIView):
 
         validated_data = serializer.validated_data
         if isinstance(validated_data, list):
-            memberships = self.create_collection(validated_data, cohort)
-            return Response(
-                self.serializer_class(memberships, many=True).data,
-                status=status.HTTP_201_CREATED,
-            )
+            try:
+                self.create_collection(validated_data, cohort)
+                return Response(status=status.HTTP_201_CREATED)
+            except CohortMembershipImportError as e:
+                logger.error(e)
+                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         membership = self.create_instance(validated_data, cohort)
         return Response(
