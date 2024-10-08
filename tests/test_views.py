@@ -276,7 +276,7 @@ class TestCohortOfferingListView:
         manager = factories.PartnerManagementMembershipFactory()
         factories.CohortOfferingFactory(cohort__partner=manager.partner)
         offering_list_view = views.CohortOfferingListView.as_view()
-        request = request = api_rf.get("/offerings/")
+        request = api_rf.get("/offerings/")
         force_authenticate(request, manager.user)
 
         response = offering_list_view(request)
@@ -290,13 +290,12 @@ class TestCohortOfferingListView:
         manager = factories.PartnerManagementMembershipFactory()
         factories.CohortOfferingFactory()
         offering_list_view = views.CohortOfferingListView.as_view()
-        request = request = api_rf.get("/offerings/")
+        request = api_rf.get("/offerings/")
         force_authenticate(request, manager.user)
 
         response = offering_list_view(request)
 
-        assert response.status_code == 200
-        assert len(response.data) == 0
+        assert response.status_code == 403
 
     def test_membership_offerings_listed(self, api_rf):
         """Members should see offerings for their cohorts."""
@@ -304,7 +303,7 @@ class TestCohortOfferingListView:
         member = factories.CohortMembershipFactory()
         factories.CohortOfferingFactory(cohort=member.cohort)
         offering_list_view = views.CohortOfferingListView.as_view()
-        request = request = api_rf.get("/offerings/")
+        request = api_rf.get("/offerings/")
         force_authenticate(request, member.user)
 
         response = offering_list_view(request)
@@ -312,13 +311,26 @@ class TestCohortOfferingListView:
         assert response.status_code == 200
         assert len(response.data) == 1
 
+    def test_deactivated_membership_offerings_not_listed(self, api_rf):
+        """Members shouldn't see offerings if they are deactivated."""
+
+        member = factories.CohortMembershipFactory(active=False)
+        factories.CohortOfferingFactory(cohort=member.cohort)
+        offering_list_view = views.CohortOfferingListView.as_view()
+        request = api_rf.get("/offerings/")
+        force_authenticate(request, member.user)
+
+        response = offering_list_view(request)
+
+        assert response.status_code == 403
+
     def test_other_offerings_not_listed(self, api_rf):
         """Members shouldn't see offerings from cohorts if they aren't a member."""
 
         member = factories.CohortMembershipFactory()
         factories.CohortOfferingFactory()
         offering_list_view = views.CohortOfferingListView.as_view()
-        request = request = api_rf.get("/offerings/")
+        request = api_rf.get("/offerings/")
         force_authenticate(request, member.user)
 
         response = offering_list_view(request)

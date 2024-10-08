@@ -35,7 +35,7 @@ def update_student_enrollment(course_key, student_email, action):
                 course_key, student_email, auto_enroll=True
             )
         elif action == UNENROLL_ACTION:
-            previous_state, after_state, enrollment_obj = enrollment.unenroll_email(
+            previous_state, after_state = enrollment.unenroll_email(
                 course_key, student_email
             )
         else:

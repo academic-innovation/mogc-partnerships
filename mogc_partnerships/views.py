@@ -103,7 +103,9 @@ class CohortOfferingListView(generics.ListAPIView):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context["enrollments"] = self.request.user.enrollment_records.values_list(
+        context[
+            "enrollments"
+        ] = self.request.user.enrollment_records.active().values_list(
             "offering_id", flat=True
         )
         return context
@@ -114,7 +116,10 @@ class CohortOfferingListView(generics.ListAPIView):
         managed_offerings = CohortOffering.objects.filter(
             cohort__partner_id__in=managed_partners.values_list("id", flat=True)
         )
-        memberships = user.memberships.all()
+        memberships = user.memberships.filter(active=True).all()
+        if not (managed_offerings or memberships):
+            raise PermissionDenied("User has no active cohort memberships")
+
         member_offerings = CohortOffering.objects.filter(
             cohort__in=memberships.values_list("cohort_id", flat=True)
         )
@@ -290,8 +295,6 @@ class CohortMembershipUpdateView(generics.UpdateAPIView):
         if not eligible_enrollment_records:
             return
 
-        eligible_enrollment_records.update(is_active=False)
-
         unenrollment_results = []
         for er in eligible_enrollment_records:
             result = compat.update_student_enrollment(
@@ -301,10 +304,12 @@ class CohortMembershipUpdateView(generics.UpdateAPIView):
             )
             unenrollment_results.append(result)
 
+        eligible_enrollment_records.update(is_active=False)
+
     def perform_update(self, serializer):
         cohort_member = self.get_object()
         user = cohort_member.user
-        if user:
+        if user and not serializer.validated_data.get("active"):
             self.unenroll(cohort_member)
 
         return super().perform_update(serializer)
