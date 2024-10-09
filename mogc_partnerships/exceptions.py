@@ -1,2 +1,0 @@
-class CohortMembershipImportError(Exception):
-    pass

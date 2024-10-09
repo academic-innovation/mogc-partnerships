@@ -468,7 +468,9 @@ class TestCohortMembershipCreateView:
 
     def test_manager_can_create_membership(self, api_rf, mocker):
         """Managers can create membership for cohorts they manage."""
-        edx_ace_mock = mocker.patch("edx_ace.ace.send")
+        mock_message_task = mocker.patch(
+            "mogc_partnerships.tasks.trigger_send_cohort_membership_invite.delay"
+        )
 
         manager = factories.PartnerManagementMembershipFactory()
         cohort = factories.PartnerCohortFactory(partner=manager.partner)
@@ -480,7 +482,7 @@ class TestCohortMembershipCreateView:
 
         assert response.status_code == 201
         assert cohort.memberships.first().email == "a@b.com"
-        assert edx_ace_mock.call_count == 1
+        assert mock_message_task.call_count == 1
 
     def test_only_own_cohort(self, api_rf):
         """Managers can't create memberships for cohorts they don't manage."""
@@ -498,8 +500,8 @@ class TestCohortMembershipCreateView:
 
     def test_bulk_create(self, api_rf, mocker):
         """Managers can upload a list of emails to bulk create memberships"""
-        import_task_mock = mocker.patch(
-            "mogc_partnerships.tasks.batch_create_memberships"
+        mock_message_task = mocker.patch(
+            "mogc_partnerships.tasks.trigger_send_cohort_membership_invites.delay"
         )
 
         manager = factories.PartnerManagementMembershipFactory()
@@ -517,15 +519,16 @@ class TestCohortMembershipCreateView:
         response = member_create_view(request, cohort_uuid=cohort.uuid)
 
         assert response.status_code == 201
-        assert import_task_mock.call_count == 1
+        assert len(response.data) == 10
+        assert mock_message_task.call_count == 1
 
     def test_bulk_create_with_existing_user(self, api_rf, mocker):
         """
         Managers can upload a list of emails to bulk create memberships
         for existing user emails
         """
-        import_task_mock = mocker.patch(
-            "mogc_partnerships.tasks.batch_create_memberships"
+        mock_message_task = mocker.patch(
+            "mogc_partnerships.tasks.trigger_send_cohort_membership_invites.delay"
         )
 
         manager = factories.PartnerManagementMembershipFactory()
@@ -544,7 +547,8 @@ class TestCohortMembershipCreateView:
         response = member_create_view(request, cohort_uuid=cohort.uuid)
 
         assert response.status_code == 201
-        assert import_task_mock.call_count == 1
+        assert len(response.data) == 1
+        assert mock_message_task.call_count == 1
 
 
 @pytest.mark.django_db
