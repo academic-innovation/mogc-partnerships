@@ -37,6 +37,8 @@ def trigger_send_cohort_membership_invite(cohort_membership_id):
 
 @shared_task
 def trigger_send_cohort_membership_invites(cohort_membership_ids):
-    cohort_memberships = CohortMembership.objects.filter(pk__in=cohort_membership_ids).all()
+    cohort_memberships = CohortMembership.objects.filter(
+        pk__in=cohort_membership_ids
+    ).all()
     for member in cohort_memberships:
         send_cohort_membership_invite(member)
