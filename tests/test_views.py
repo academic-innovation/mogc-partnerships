@@ -482,7 +482,9 @@ class TestCohortMembershipCreateView:
 
         assert response.status_code == 201
         assert cohort.memberships.first().email == "a@b.com"
-        assert mock_message_task.call_count == 1
+        # TODO: Revert when email reenabled
+        # assert mock_message_task.call_count == 1
+        assert mock_message_task.call_count == 0
 
     def test_only_own_cohort(self, api_rf):
         """Managers can't create memberships for cohorts they don't manage."""
@@ -520,7 +522,9 @@ class TestCohortMembershipCreateView:
 
         assert response.status_code == 201
         assert len(response.data) == 10
-        assert mock_message_task.call_count == 1
+        # TODO: Revert when email reenabled
+        # assert mock_message_task.call_count == 1
+        assert mock_message_task.call_count == 0
 
     def test_bulk_create_with_existing_user(self, api_rf, mocker):
         """
@@ -548,7 +552,9 @@ class TestCohortMembershipCreateView:
 
         assert response.status_code == 201
         assert len(response.data) == 1
-        assert mock_message_task.call_count == 1
+        # TODO: Revert when email reenabled
+        # assert mock_message_task.call_count == 1
+        assert mock_message_task.call_count == 0
 
 
 @pytest.mark.django_db
