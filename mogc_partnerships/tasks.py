@@ -31,12 +31,12 @@ def update_or_create_offering(course_id):
 
 @shared_task
 def trigger_send_cohort_membership_invite(cohort_membership_id):
-    cohort_membership = CohortMembership.get(pk=cohort_membership_id)
+    cohort_membership = CohortMembership.objects.get(pk=cohort_membership_id)
     send_cohort_membership_invite(cohort_membership)
 
 
 @shared_task
 def trigger_send_cohort_membership_invites(cohort_membership_ids):
-    cohort_memberships = CohortMembership.filter(pk__in=cohort_membership_ids).all()
+    cohort_memberships = CohortMembership.objects.filter(pk__in=cohort_membership_ids).all()
     for member in cohort_memberships:
         send_cohort_membership_invite(member)
