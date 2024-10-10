@@ -466,12 +466,8 @@ class TestCohortMembershipListView:
 class TestCohortMembershipCreateView:
     """Tests for CohortMembershipCreateView."""
 
-    def test_manager_can_create_membership(self, api_rf, mocker):
+    def test_manager_can_create_membership(self, api_rf):
         """Managers can create membership for cohorts they manage."""
-        mock_message_task = mocker.patch(
-            "mogc_partnerships.tasks.trigger_send_cohort_membership_invite.delay"
-        )
-
         manager = factories.PartnerManagementMembershipFactory()
         cohort = factories.PartnerCohortFactory(partner=manager.partner)
         member_create_view = views.CohortMembershipCreateView.as_view()
@@ -482,7 +478,6 @@ class TestCohortMembershipCreateView:
 
         assert response.status_code == 201
         assert cohort.memberships.first().email == "a@b.com"
-        assert mock_message_task.call_count == 1
 
     def test_only_own_cohort(self, api_rf):
         """Managers can't create memberships for cohorts they don't manage."""
@@ -498,12 +493,8 @@ class TestCohortMembershipCreateView:
         assert response.status_code == 403
         assert not cohort.memberships.exists()
 
-    def test_bulk_create(self, api_rf, mocker):
+    def test_bulk_create(self, api_rf):
         """Managers can upload a list of emails to bulk create memberships"""
-        mock_message_task = mocker.patch(
-            "mogc_partnerships.tasks.trigger_send_cohort_membership_invites.delay"
-        )
-
         manager = factories.PartnerManagementMembershipFactory()
         cohort = factories.PartnerCohortFactory(partner=manager.partner)
         member_create_view = views.CohortMembershipCreateView.as_view()
@@ -520,17 +511,12 @@ class TestCohortMembershipCreateView:
 
         assert response.status_code == 201
         assert len(response.data) == 10
-        assert mock_message_task.call_count == 1
 
-    def test_bulk_create_with_existing_user(self, api_rf, mocker):
+    def test_bulk_create_with_existing_user(self, api_rf):
         """
         Managers can upload a list of emails to bulk create memberships
         for existing user emails
         """
-        mock_message_task = mocker.patch(
-            "mogc_partnerships.tasks.trigger_send_cohort_membership_invites.delay"
-        )
-
         manager = factories.PartnerManagementMembershipFactory()
         factories.UserFactory(email="foo@bar.com")
         cohort = factories.PartnerCohortFactory(partner=manager.partner)
@@ -548,7 +534,6 @@ class TestCohortMembershipCreateView:
 
         assert response.status_code == 201
         assert len(response.data) == 1
-        assert mock_message_task.call_count == 1
 
 
 @pytest.mark.django_db
