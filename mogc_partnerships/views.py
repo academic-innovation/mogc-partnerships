@@ -16,7 +16,7 @@ from rest_framework.views import APIView
 
 from mogc_partnerships import serializers
 
-from . import compat, tasks
+from . import compat
 from .lib import get_cohort
 from .models import (
     CohortMembership,
@@ -198,12 +198,6 @@ class CohortMembershipCreateView(generics.CreateAPIView):
         cohort_memberships = CohortMembership.objects.filter(
             email__in=[cm.email for cm in objects], cohort=cohort
         )
-        cohort_membership_ids = cohort_memberships.values_list("id", flat=True)
-
-        # NOTE: Temporarily disabled
-        # tasks.trigger_send_cohort_membership_invites.delay(
-        #     cohort_membership_ids=list(cohort_membership_ids)
-        # )
 
         return cohort_memberships
 
@@ -217,11 +211,6 @@ class CohortMembershipCreateView(generics.CreateAPIView):
             validated_data["user"] = None
 
         cohort_membership = CohortMembership.objects.create(**validated_data)
-
-        # NOTE: Temporarily disabled
-        # tasks.trigger_send_cohort_membership_invite.delay(
-        #     cohort_membership_id=cohort_membership.id
-        # )
 
         return cohort_membership
 
