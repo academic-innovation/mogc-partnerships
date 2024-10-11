@@ -11,6 +11,7 @@ def link_user_to_invite(user: UserData, **kwargs):
     email = user.pii.email
     auth_user = AuthUser.objects.get(email=email)
     auth_user.is_active = True
+    auth_user.save()
     CohortMembership.objects.filter(email=email, user=None).update(user=auth_user)
 
 
