@@ -462,7 +462,7 @@ class TestCohortMembershipListView:
         assert response.status_code == 200
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 class TestCohortMembershipCreateView:
     """Tests for CohortMembershipCreateView."""
 
