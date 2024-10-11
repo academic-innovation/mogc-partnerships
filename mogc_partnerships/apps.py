@@ -3,6 +3,8 @@ from django.utils.translation import gettext_lazy as _
 
 from edx_django_utils.plugins.constants import PluginSettings, PluginSignals, PluginURLs
 
+from .patches import patch_skip_activation_email
+
 PROJECT_TYPE_LMS = "lms.djangoapp"
 PROJECT_TYPE_CMS = "cms.djangoapp"
 
@@ -63,3 +65,6 @@ class PartnershipsAppConfig(AppConfig):
             },
         },
     }
+
+    def ready(self):
+        patch_skip_activation_email()
