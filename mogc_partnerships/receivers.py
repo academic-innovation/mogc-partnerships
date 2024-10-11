@@ -9,7 +9,7 @@ from .models import CohortMembership, EnrollmentRecord, PartnerOffering
 def link_user_to_invite(user: UserData, **kwargs):
     AuthUser = get_user_model()
     email = user.pii.email
-    auth_user = AuthUser.objects.get(email=email)
+    auth_user = AuthUser.objects.get(email=email, is_active=True)
     CohortMembership.objects.filter(email=email, user=None).update(user=auth_user)
 
 
