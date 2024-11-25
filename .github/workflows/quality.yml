@@ -64,4 +64,4 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: pip install --user --upgrade nox
-      - run: nox -s "test(django=${{ matrix.django }})"
+      - run: nox -s "test(python='${{ matrix.python }}', django='${{ matrix.django }}')"
