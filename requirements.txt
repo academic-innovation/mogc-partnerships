@@ -1,7 +1,7 @@
 black
 celery
-django<4.0
-djangorestframework==3.13.1
+django<5.0
+djangorestframework==3.15.2
 edx-ace==1.9.1
 edx-django-utils==5.14.2
 edx-drf-extensions
