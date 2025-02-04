@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="mogc-partnerships",
-    version="0.4.7b1",
+    version="0.4.7",
     packages=find_packages(),
     install_requires=[
         "django>=3.2,<5.0",
